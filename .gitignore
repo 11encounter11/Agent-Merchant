@@ -1,0 +1,17 @@
+# Git ignore rules
+# Sensitive files
+.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
