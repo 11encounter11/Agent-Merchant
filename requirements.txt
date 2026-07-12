@@ -6,23 +6,27 @@
 #
 # 【教学说明】
 # 每个依赖后面我写了注释，告诉你它是干什么的、类比 Java 的什么
-# 版本号用 >= 而不是 == ，让 pip 自动选择兼容的最新版本
+#
+# 【教学说明】版本号说明
+# >= 表示"最低版本"，pip 会自动装兼容的最新版本。
+# 下面括号里标注了当前实际安装的版本，供参考。
+# 企业里通常用 >= 保持灵活性，用 pip freeze 导出精确版本做生产锁定。
 
 # --- Web 框架 ---
-fastapi>=0.115.0            # Web框架，类比 Spring Boot。用来写 HTTP 接口
-uvicorn[standard]>=0.30.0   # ASGI服务器，类比 Tomcat。负责运行你的 FastAPI 应用
+fastapi>=0.115.0            # Web框架，类比 Spring Boot。用来写 HTTP 接口（当前: 0.139.0）
+uvicorn[standard]>=0.30.0   # ASGI服务器，类比 Tomcat。负责运行你的 FastAPI 应用（当前: 0.51.0）
 
 # --- LLM 相关 ---
-langchain-openai>=0.3.0     # LangChain 的 OpenAI 兼容客户端（DeepSeek 兼容 OpenAI 协议，所以能用）
-langgraph>=0.2.0            # Agent 框架，用"图"来组织 Agent 的思考流程
-langchain-core>=0.3.0       # LangChain 核心库，提供基础抽象（Tool、Message 等）
+langchain-openai>=0.3.0     # LangChain 的 OpenAI 兼容客户端，DeepSeek 兼容 OpenAI 协议（当前: 1.3.5）
+langgraph>=0.2.0            # Agent 框架，用"图"来组织 Agent 的思考流程（当前: 1.2.9）
+langchain-core>=0.3.0       # LangChain 核心库，提供 Tool、Message 等基础抽象（当前: 1.4.9）
 
 # --- 数据库 ---
-aiomysql>=0.2.0             # MySQL 异步连接库，类比 MyBatis。让 Agent 能查数据库
-sqlalchemy>=2.0.0           # ORM框架，类比 MyBatis-Plus。提供数据库操作的抽象层
+aiomysql>=0.2.0             # MySQL 异步连接库，类比 MyBatis。让 Agent 能查数据库（当前: 0.3.2）
+sqlalchemy>=2.0.0           # ORM框架，类比 MyBatis-Plus。提供数据库操作的抽象层（当前: 2.0.51）
 
 # --- 工具库 ---
-python-dotenv>=1.0.0        # 读取 .env 文件的环境变量，类比 application.yml 读取配置
-httpx>=0.27.0               # HTTP客户端，类比 RestTemplate。Agent 用它调 Java 后端 API
-pydantic>=2.9.0             # 数据校验，类比 DTO + @Valid。定义请求/响应的数据格式
-pydantic-settings>=2.5.0    # Pydantic 的配置管理扩展，从环境变量读取配置
+python-dotenv>=1.0.0        # 读取 .env 文件的环境变量，类比 application.yml 读取配置（当前: 1.2.2）
+httpx>=0.27.0               # HTTP客户端，类比 RestTemplate。Agent 用它调 Java 后端 API（当前: 0.28.1）
+pydantic>=2.9.0             # 数据校验，类比 DTO + @Valid。定义请求/响应的数据格式（当前: 2.13.4）
+pydantic-settings>=2.5.0    # Pydantic 的配置管理扩展，从环境变量读取配置（当前: 2.14.2）

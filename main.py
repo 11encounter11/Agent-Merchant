@@ -21,7 +21,10 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from config import settings
+from schemas.chat import ChatRequest, ChatResponse
+import json
 
 # ============================================================
 # 第一步：创建 FastAPI 应用实例
@@ -92,6 +95,114 @@ async def root():
         "docs": "/docs",          # FastAPI 自动生成的接口文档地址
         "health": "/health"
     }
+
+
+# ============================================================
+# 第五步：聊天接口（阶段 2 新增）
+# ============================================================
+# 【教学说明】这个接口做了什么？
+# 1. 前端发送 POST 请求，body 里带 {"message": "你好"}
+# 2. FastAPI 自动把 JSON 转成 ChatRequest 对象（Pydantic 校验）
+# 3. 调用 chat_agent.chat() 把消息发给 DeepSeek
+# 4. 拿到 AI 回复，包装成 ChatResponse 返回
+#
+# 类比 Java：
+#   @PostMapping("/api/agent/chat")
+#   public Result<ChatResponse> chat(@RequestBody ChatRequest request) {
+#       ChatResponse response = chatAgent.chat(request.getMessage());
+#       return Result.success(response);
+#   }
+# ============================================================
+@app.post("/api/agent/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """
+    聊天接口。商家发消息，Agent 回复。
+
+    请求示例：
+        POST /api/agent/chat
+        {"message": "你好，帮我看看今天的经营数据"}
+
+    响应示例：
+        {"reply": "你好！我是苍穹外卖的智能经营助手...", "session_id": "xxx", "success": true}
+    """
+    # 调用 Agent 处理消息
+    # 【教学说明】这里导入了 chat_agent 模块
+    # 就像 Java 里 @Autowired ChatAgentService chatAgent;
+    from agent.chat_agent import chat as agent_chat
+
+    result = agent_chat(
+        message=request.message,
+        session_id=request.session_id
+    )
+
+    # 返回 ChatResponse 对象
+    # FastAPI 会自动把它转成 JSON 返回给前端
+    return ChatResponse(
+        reply=result["reply"],
+        session_id=result["session_id"],
+        success=True
+    )
+
+
+# ============================================================
+# 流式聊天接口（SSE 版本）（阶段 2 新增）
+# ============================================================
+# 【教学说明】SSE 是怎么工作的？
+#
+# 普通接口：服务端处理完 → 一次性返回 JSON → 连接关闭
+#
+# SSE 接口：服务端开始处理 → 每产生一小段文字就发一条 "data: xxx\n\n" →
+#          全部完成后发 "data: [DONE]\n\n" → 连接关闭
+#
+# 前端用 EventSource 或者 fetch 来读取这种流。
+#
+# 格式示例（服务端发的原始数据）：
+#   data: {"content": "你"}
+#
+#   data: {"content": "好"}
+#
+#   data: {"content": "！"}
+#
+#   data: [DONE]
+#
+# 前端收到后拼接起来就是"你好！"
+# ============================================================
+@app.post("/api/agent/chat/stream")
+async def chat_stream(request: ChatRequest):
+    """
+    流式聊天接口（SSE）。
+    一个字一个字返回 AI 的回复，实现打字机效果。
+    """
+    from agent.chat_agent import chat_stream as agent_chat_stream
+    import uuid
+
+    session_id = request.session_id or str(uuid.uuid4())
+
+    def event_generator():
+        """
+        SSE 事件生成器。
+
+        【教学说明】这个函数做了什么？
+        1. 调用 agent_chat_stream() 获取 AI 的流式回复
+        2. 每收到一小段文字，就包装成 SSE 格式发出去
+        3. 最后发送 [DONE] 表示结束
+        """
+        # 先发送 session_id，前端需要保存以便下次请求时使用
+        yield f"data: {json.dumps({'type': 'session', 'session_id': session_id}, ensure_ascii=False)}\n\n"
+
+        # 逐块发送 AI 的回复
+        for chunk in agent_chat_stream(request.message, session_id):
+            yield f"data: {json.dumps({'type': 'content', 'content': chunk}, ensure_ascii=False)}\n\n"
+
+        # 发送结束标记
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+    # 返回 StreamingResponse
+    # media_type="text/event-stream" 告诉浏览器：这是一个 SSE 流
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream"
+    )
 
 
 # ============================================================
