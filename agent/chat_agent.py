@@ -8,6 +8,7 @@ Agent 核心逻辑（用 LangGraph 构建）
 
 import uuid
 from typing import Annotated, Sequence
+from langgraph import graph
 from typing_extensions import TypedDict
 
 from langchain_core.messages import BaseMessage, SystemMessage, HumanMessage, AIMessage
@@ -114,6 +115,10 @@ graph_builder.add_edge("tools", "call_llm")
 
 agent_graph = graph_builder.compile()
 
+graph_png = graph.get_graph(xray=True).draw_mermaid_png()
+with open("flow_graph_v3.png", "wb") as f:
+    f.write(graph_png)
+print("流程图已保存为 flow_graph_v3.png")
 
 # ============================================================
 # 对外接口函数
@@ -163,7 +168,6 @@ def chat_stream(message: str, session_id: str = None):
             msg, metadata = chunk
 
             if msg.content and isinstance(msg, AIMessage):
-                # 收集 AI 回复的内容（用于保存历史）
                 collected.append(msg)
                 yield msg.content
 
