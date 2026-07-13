@@ -12,7 +12,6 @@
 import httpx
 from langchain_core.tools import tool
 from config import settings
-from db.database import execute_query
 
 
 # ============================================================
@@ -163,15 +162,16 @@ async def stop_dish(dish_id: int) -> str:
 
     注意：停售菜品前请确认，因为关联的套餐也会被一起停售。
     """
-    # 直接更新数据库（Java 后端菜品接口存在内部问题，暂用直接 DB 操作）
-    await execute_query("UPDATE dish SET status = 0 WHERE id = %s", (dish_id,))
-    # 同时停售包含该菜品的套餐
-    await execute_query(
-        "UPDATE setmeal SET status = 0 WHERE id IN "
-        "(SELECT DISTINCT setmeal_id FROM setmeal_dish WHERE dish_id = %s)",
-        (dish_id,)
+    result = await _call_java_api(
+        "POST",
+        f"/admin/dish/status/0",
+        params={"id": dish_id}
     )
-    return f"菜品 ID {dish_id} 已停售。包含该菜品的套餐也已自动停售。"
+
+    if result.get("code") == 1:
+        return f"菜品 ID {dish_id} 已停售。包含该菜品的套餐也会被自动停售。"
+    else:
+        return f"停售失败：{result.get('msg', '未知错误')}"
 
 
 @tool
@@ -186,5 +186,13 @@ async def start_dish(dish_id: int) -> str:
         - "把东坡肘子重新上架"
         - "起售菜品 ID 59"
     """
-    await execute_query("UPDATE dish SET status = 1 WHERE id = %s", (dish_id,))
-    return f"菜品 ID {dish_id} 已重新起售！"
+    result = await _call_java_api(
+        "POST",
+        f"/admin/dish/status/1",
+        params={"id": dish_id}
+    )
+
+    if result.get("code") == 1:
+        return f"菜品 ID {dish_id} 已重新起售！"
+    else:
+        return f"起售失败：{result.get('msg', '未知错误')}"
