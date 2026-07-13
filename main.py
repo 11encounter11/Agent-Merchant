@@ -130,7 +130,8 @@ async def chat(request: ChatRequest):
     # 就像 Java 里 @Autowired ChatAgentService chatAgent;
     from agent.chat_agent import chat as agent_chat
 
-    result = agent_chat(
+    # chat() 现在是 async 函数，需要 await
+    result = await agent_chat(
         message=request.message,
         session_id=request.session_id
     )
@@ -178,27 +179,17 @@ async def chat_stream(request: ChatRequest):
 
     session_id = request.session_id or str(uuid.uuid4())
 
-    def event_generator():
-        """
-        SSE 事件生成器。
-
-        【教学说明】这个函数做了什么？
-        1. 调用 agent_chat_stream() 获取 AI 的流式回复
-        2. 每收到一小段文字，就包装成 SSE 格式发出去
-        3. 最后发送 [DONE] 表示结束
-        """
-        # 先发送 session_id，前端需要保存以便下次请求时使用
+    async def event_generator():
+        # 先发送 session_id
         yield f"data: {json.dumps({'type': 'session', 'session_id': session_id}, ensure_ascii=False)}\n\n"
 
-        # 逐块发送 AI 的回复
-        for chunk in agent_chat_stream(request.message, session_id):
+        # 逐块发送 AI 的回复（chat_stream 返回异步生成器）
+        async for chunk in agent_chat_stream(request.message, session_id):
             yield f"data: {json.dumps({'type': 'content', 'content': chunk}, ensure_ascii=False)}\n\n"
 
         # 发送结束标记
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
-    # 返回 StreamingResponse
-    # media_type="text/event-stream" 告诉浏览器：这是一个 SSE 流
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream"

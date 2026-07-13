@@ -22,8 +22,9 @@ langgraph>=0.2.0            # Agent 框架，用"图"来组织 Agent 的思考�
 langchain-core>=0.3.0       # LangChain 核心库，提供 Tool、Message 等基础抽象（当前: 1.4.9）
 
 # --- 数据库 ---
-aiomysql>=0.2.0             # MySQL 异步连接库，类比 MyBatis。让 Agent 能查数据库（当前: 0.3.2）
-sqlalchemy>=2.0.0           # ORM框架，类比 MyBatis-Plus。提供数据库操作的抽象层（当前: 2.0.51）
+aiomysql>=0.2.0             # MySQL 异步连接库（当前: 0.3.2）
+sqlalchemy>=2.0.0           # ORM框架（当前: 2.0.51）
+cryptography>=42.0.0        # MySQL caching_sha2_password 认证所需（当前: 49.0.0）
 
 # --- 工具库 ---
 python-dotenv>=1.0.0        # 读取 .env 文件的环境变量，类比 application.yml 读取配置（当前: 1.2.2）
