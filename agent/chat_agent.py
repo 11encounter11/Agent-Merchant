@@ -115,7 +115,7 @@ graph_builder.add_edge("tools", "call_llm")
 
 agent_graph = graph_builder.compile()
 
-graph_png = graph.get_graph(xray=True).draw_mermaid_png()
+graph_png = agent_graph.get_graph(xray=True).draw_mermaid_png()
 with open("flow_graph_v3.png", "wb") as f:
     f.write(graph_png)
 print("流程图已保存为 flow_graph_v3.png")
