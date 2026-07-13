@@ -19,7 +19,7 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
 from config import settings
-from agent.prompts import SYSTEM_PROMPT_V3
+from agent.prompts import SYSTEM_PROMPT_V2
 from agent.session import get_history, save_history
 from agent.tools.sales_tools import query_turnover, query_order_count, query_user_stats
 from agent.tools.dish_tools import query_dish_list, query_dish_by_name
@@ -73,7 +73,7 @@ def call_llm(state: AgentState) -> dict:
     # 这样 LLM 就能理解“今天”“这周”“本月”等时间概念了。
     now = datetime.now()
     weekdays = ['一', '二', '三', '四', '五', '六', '日']
-    prompt_with_date = SYSTEM_PROMPT_V3.format(
+    prompt_with_date = SYSTEM_PROMPT_V2.format(
         current_date=now.strftime('%Y-%m-%d'),  # 例如 "2026-07-13"
         weekday=weekdays[now.weekday()]          # 例如 "一"
     )
