@@ -18,6 +18,7 @@ from langgraph.prebuilt import ToolNode
 
 from config import settings
 from agent.prompts import SYSTEM_PROMPT_V3
+from agent.session import get_history, save_history
 from agent.tools.sales_tools import query_turnover, query_order_count, query_user_stats
 from agent.tools.dish_tools import query_dish_list, query_dish_by_name
 from agent.tools.order_action_tools import accept_order, reject_order, stop_dish, start_dish
@@ -118,15 +119,20 @@ agent_graph = graph_builder.compile()
 # 对外接口函数
 # ============================================================
 async def chat(message: str, session_id: str = None) -> dict:
-    """非流式对话（异步）"""
+    """非流式对话（异步，支持多轮对话）"""
     if session_id is None:
         session_id = str(uuid.uuid4())
 
+    # 加载历史消息 + 拼上当前新消息
+    history = get_history(session_id)
     user_message = HumanMessage(content=message)
-    initial_state = {"messages": [user_message]}
+    initial_state = {"messages": history + [user_message]}
 
     # 用 ainvoke 而不是 invoke，因为 Tool 是 async 函数
     result = await agent_graph.ainvoke(initial_state)
+
+    # 保存更新后的历史（包含本次的用户消息和 AI 回复）
+    save_history(session_id, result["messages"])
 
     ai_reply = result["messages"][-1].content
 
@@ -137,14 +143,19 @@ async def chat(message: str, session_id: str = None) -> dict:
 
 
 def chat_stream(message: str, session_id: str = None):
-    """流式对话（走图结构）"""
+    """流式对话（走图结构，支持多轮对话）"""
     if session_id is None:
         session_id = str(uuid.uuid4())
 
+    # 加载历史消息
+    history = get_history(session_id)
     user_message = HumanMessage(content=message)
-    initial_state = {"messages": [user_message]}
+    initial_state = {"messages": history + [user_message]}
 
     async def async_generator():
+        # 收集本次对话产生的所有消息（用于保存历史）
+        collected = list(history) + [user_message]
+
         async for chunk in agent_graph.astream(
             initial_state,
             stream_mode="messages"
@@ -152,6 +163,11 @@ def chat_stream(message: str, session_id: str = None):
             msg, metadata = chunk
 
             if msg.content and isinstance(msg, AIMessage):
+                # 收集 AI 回复的内容（用于保存历史）
+                collected.append(msg)
                 yield msg.content
+
+        # 保存历史
+        save_history(session_id, collected)
 
     return async_generator()
