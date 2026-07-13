@@ -17,8 +17,10 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 
 from config import settings
-from agent.prompts import SYSTEM_PROMPT_V2
+from agent.prompts import SYSTEM_PROMPT_V3
 from agent.tools.sales_tools import query_turnover, query_order_count, query_user_stats
+from agent.tools.dish_tools import query_dish_list, query_dish_by_name
+from agent.tools.order_action_tools import accept_order, reject_order, stop_dish, start_dish
 
 
 # ============================================================
@@ -31,7 +33,13 @@ class AgentState(TypedDict):
 # ============================================================
 # 收集所有工具
 # ============================================================
-tools = [query_turnover, query_order_count, query_user_stats]
+tools = [
+    # 查询类（直接查数据库）
+    query_turnover, query_order_count, query_user_stats,
+    query_dish_list, query_dish_by_name,
+    # 操作类（调用 Java 后端 API）
+    accept_order, reject_order, stop_dish, start_dish,
+]
 
 
 # ============================================================
@@ -56,7 +64,7 @@ def call_llm(state: AgentState) -> dict:
     """
     messages = state["messages"]
 
-    system_message = SystemMessage(content=SYSTEM_PROMPT_V2)
+    system_message = SystemMessage(content=SYSTEM_PROMPT_V3)
     full_messages = [system_message] + list(messages)
 
     response = llm.invoke(full_messages)
