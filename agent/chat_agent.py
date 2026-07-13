@@ -51,9 +51,9 @@ tools = [
 # bind_tools() 告诉 DeepSeek："你有这些工具可以用"。
 # DeepSeek 会在回复中决定是否调用工具、调用哪个、传什么参数。
 llm = ChatOpenAI(
-    api_key=settings.DEEPSEEK_API_KEY,
-    base_url=settings.DEEPSEEK_BASE_URL,
-    model=settings.DEEPSEEK_MODEL,
+    api_key=settings.LLM_API_KEY,
+    base_url=settings.LLM_BASE_URL,
+    model=settings.LLM_MODEL,
     temperature=0.7,
 ).bind_tools(tools)
 

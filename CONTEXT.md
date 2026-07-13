@@ -120,25 +120,32 @@ e:/苍穹/苍穹外卖/
 
 ## 六、当前阶段 & 下一步
 
-### 当前：准备进入阶段 6 - 前端对接（Vue 对话 UI）
+### 当前：阶段 7 - 全面测试 + Prompt 深度优化（进行中）
 
-**阶段 6 开发顺序清单**：
-1. **`admin-web/src/api/agent.ts`** — 封装 Agent API 请求（非流式 + SSE 流式）
-2. **`admin-web/src/views/agent/index.vue`** — 对话页面组件（聊天气泡、输入框、消息列表）
-3. **`admin-web/src/router.ts`** — 添加 Agent 页面路由
-4. **`admin-web/vue.config.js`** — 添加代理规则（/api/agent → localhost:8100）
-5. 启动前端 + 后端联调测试
+**已完成**：
+- 构建 50 题评测集（`eval_dataset.json`，5 大类 × 10 题）
+- 编写自动测试脚本（`run_eval.py`，支持按类别/ID 过滤）
+- 完成 3 个模型对比测试：
+  - deepseek-chat：自动 98%，人工发现 6 个 Bug（4个日期错误）
+  - deepseek-v4-pro：自动 94%，人工发现 2 个 Bug（0个日期错误，但慢 2.5 倍）
+  - **qwen-max（当前使用）**：自动 100%，人工发现 3 个 Bug
+- 建立 Bug 跟踪机制（`eval_results/BUG_qwen-max.md`）
+- 学习企业级测试方法论（`docs/AGENT_TESTING_GUIDE.md`）
 
-**阶段 6 教学重点**：
-- SSE 前端接收原理（EventSource 或 fetch + ReadableStream）
-- Vue 2 组件基础（data、methods、生命周期）
-- 前后端联调方法（代理配置、跨域处理）
-- Markdown 渲染（Agent 回复含表格、列表等格式）
+**qwen-max 当前 Bug（待修复）**：
+1. BUG-001: 端午节日期推算错误（A09）→ Prompt 补充节假日参考
+2. BUG-002: 营销文案没有拒绝（E03）→ Prompt 加强能力边界
+3. BUG-003: 暴露了底层模型身份（E10）→ Prompt 加强身份约束
 
-### 之后：阶段 7 - 全面测试 + Prompt 深度优化
-- 构建 50 题评测集（5 类问题 × 10 题）
-- 回归测试 + 边界测试
-- 准确率从 60% 迭代到 90%+
+**工具层 Bug（两个模型都有，需改代码）**：
+- 营业额无法按天拆分（A10）→ 新增 Tool 或扩展 query_turnover
+- 无法查询已停售菜品（C04, D04）→ query_dish_list 加 status 参数
+
+### 下一步
+1. 修复 qwen-max 的 3 个 Prompt Bug
+2. 修复工具层 Bug（按天营业额、停售菜品查询）
+3. 修复后跑回归测试，对比准确率
+4. 补充多轮对话测试（当前评测集是无记忆独立会话）
 
 ---
 
@@ -178,8 +185,9 @@ e:/苍穹/苍穹外卖/
 | MySQL 数据库名 | sky_take_out |
 | MySQL 密码 | 123456 |
 | Redis 密码 | 123456 |
-| DeepSeek 模型 | deepseek-chat |
-| DeepSeek API Base URL | https://api.deepseek.com |
+| LLM 模型 | qwen-max（通义千问，阿里云 DashScope） |
+| LLM API Base URL | https://dashscope.aliyuncs.com/compatible-mode/v1 |
+| LLM API Key 变量名 | LLM_API_KEY（在 .env 中配置） |
 | Python 版本 | 3.12.4 |
 | Node 版本 | 24.18.0（通过 nvm 管理） |
 | Java 后端登录 | POST /admin/employee/login，admin / 123456 |
@@ -388,8 +396,9 @@ cd "e:\苍穹\苍穹外卖\agent-service"
 | Java 后端端口 | 8080 |
 | 前端开发服务器端口 | 8888 |
 | MySQL 数据库名 | sky_take_out |
-| DeepSeek 模型 | deepseek-chat |
-| DeepSeek API Base URL | https://api.deepseek.com |
+| LLM 模型 | qwen-max（通义千问，阿里云 DashScope） |
+| LLM API Base URL | https://dashscope.aliyuncs.com/compatible-mode/v1 |
+| LLM API Key 变量名 | LLM_API_KEY（在 .env 中配置） |
 | Python 版本 | 3.12.4 |
 | Python 虚拟环境路径 | e:/苍穹/苍穹外卖/agent-service/venv |
 

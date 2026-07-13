@@ -35,11 +35,12 @@ class Settings(BaseSettings):
     APP_HOST: str = "0.0.0.0"                # 监听地址，0.0.0.0 表示允许外部访问
     APP_PORT: int = 8100                      # 服务端口（8080被Java后端占了，8888被前端占了）
 
-    # ===================== DeepSeek LLM 配置 =====================
-    # DeepSeek 的 API 兼容 OpenAI 的格式，所以我们用 langchain-openai 来调用它
-    DEEPSEEK_API_KEY: str = ""               # 你的 DeepSeek API Key（从 .env 读取，不要写死！）
-    DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"  # DeepSeek API 地址
-    DEEPSEEK_MODEL: str = "deepseek-chat"    # 使用的模型名称
+    # ===================== LLM 配置（通义千问 Qwen） =====================
+    # 阿里云 DashScope API 兼容 OpenAI 格式，所以我们用 langchain-openai 来调用
+    # 申请 API Key：https://dashscope.console.aliyun.com/apiKey
+    LLM_API_KEY: str = ""                    # 你的 DashScope API Key（从 .env 读取）
+    LLM_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"  # DashScope API 地址
+    LLM_MODEL: str = "qwen-max"              # 模型名称（可选：qwen-max / qwen-plus / qwen-turbo）
 
     # ===================== MySQL 数据库配置 =====================
     # Agent 需要直接查数据库来获取经营数据
