@@ -7,6 +7,7 @@ Agent 核心逻辑（用 LangGraph 构建）
 """
 
 import uuid
+from datetime import datetime
 from typing import Annotated, Sequence
 from langgraph import graph
 from typing_extensions import TypedDict
@@ -66,7 +67,18 @@ def call_llm(state: AgentState) -> dict:
     """
     messages = state["messages"]
 
-    system_message = SystemMessage(content=SYSTEM_PROMPT_V3)
+    # 【教学说明】为什么需要动态注入日期？
+    # LLM 没有内置时钟，不知道今天是几号。
+    # 我们在每次调用时把当前日期填充到 Prompt 模板里，
+    # 这样 LLM 就能理解“今天”“这周”“本月”等时间概念了。
+    now = datetime.now()
+    weekdays = ['一', '二', '三', '四', '五', '六', '日']
+    prompt_with_date = SYSTEM_PROMPT_V3.format(
+        current_date=now.strftime('%Y-%m-%d'),  # 例如 "2026-07-13"
+        weekday=weekdays[now.weekday()]          # 例如 "一"
+    )
+
+    system_message = SystemMessage(content=prompt_with_date)
     full_messages = [system_message] + list(messages)
 
     response = llm.invoke(full_messages)
