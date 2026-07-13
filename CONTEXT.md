@@ -17,6 +17,253 @@
 | 组件 | 选型 | 说明 |
 |------|------|------|
 | Agent 框架 | **LangGraph**（图式，1.2.9） | 支持循环和条件分支，适合 Agent |
+| Web 框架 | **FastAPI**（0.139.0） | Python 异步 Web 框架 |
+| LLM 模型 | **DeepSeek** API | 兼容 OpenAI 协议，用 langchain-openai 调用 |
+| 数据库 | **MySQL**（sky_take_out） | 本地已部署，含800条测试数据 |
+| 前端 | **Vue 2 + Element UI** | 已有项目，需新增对话组件 |
+| Java 后端 | **Spring Boot 2.7.3** | 已有项目，监听 8080 端口 |
+| 前端开发服务器 | Vue CLI | 监听 8888 端口 |
+| Agent 服务 | FastAPI | 监听 **8100 端口** |
+| 版本管理 | Git | 本地仓库已初始化 |
+
+---
+
+## 三、教学模式
+
+- **模式 C（混合模式）**：简单的我写好让学员理解，核心的带学员一起写，优化迭代教学员方法论
+- **学员基础**：
+  - Python：基础语法会一些，很多语法不会，学过 LangChain/LangGraph 初步
+  - Spring Boot：只了解少量注解含义，很多步骤不清楚
+  - **重要**：类比 Spring Boot 时需要讲解更细致，不能假设学员理解完整的 Spring Boot 流程
+- **教学风格要求**：
+  - 每段代码加详细中文注释
+  - Java 类比仅限于 FastAPI 接口层（路由、中间件），其他部分不用 Java 类比
+  - 核心知识点要先讲原理再写代码
+  - Prompt 要带着学员一起迭代，不能一次给最终版
+  - 每个阶段开始前，先给出"开发顺序清单"（先写什么文件、再写什么、为什么）
+
+---
+
+## 四、项目目录结构
+
+```
+e:/苍穹/苍穹外卖/
+├── backend/                          # Java 后端（Spring Boot，已有，不动）
+├── admin-web/                        # 管理端前端（Vue 2，已有）
+├── agent-service/                    # 【新建】Python Agent 服务
+│   ├── main.py                       # FastAPI 入口
+│   ├── config.py                     # 配置管理（Pydantic Settings）
+│   ├── .env                          # 环境变量（不提交 Git）
+│   ├── .gitignore
+│   ├── requirements.txt              # Python 依赖
+│   ├── LEARNING_PROGRESS.md          # 学习进度文档
+│   ├── CONTEXT.md                    # 本文件
+│   ├── venv/                         # Python 虚拟环境（不提交 Git）
+│   ├── agent/
+│   │   ├── chat_agent.py             # Agent 核心（LangGraph 图 + 接口函数）
+│   │   ├── prompts.py                # System Prompt（当前 v3）
+│   │   ├── session.py                # 会话管理（多轮对话历史存储）
+│   │   └── tools/
+│   │       ├── sales_tools.py        # 营业额/订单/用户统计（查 MySQL）
+│   │       ├── dish_tools.py         # 菜品列表/搜索（查 MySQL）
+│   │       └── order_action_tools.py # 接单/拒单/停售/起售（调 Java API）
+│   ├── db/
+│   │   └── database.py               # MySQL 异步连接（aiomysql）
+│   ├── schemas/
+│   │   └── chat.py                   # ChatRequest / ChatResponse 模型
+│   ├── generate_test_data.py         # 测试数据生成脚本
+│   ├── test_multiturn.py             # 多轮对话测试脚本
+│   └── graph学习/                     # 学员自学 LangGraph 的练习文件
+└── database/
+    └── sky.sql                       # 数据库建表 SQL
+```
+
+---
+
+## 五、已完成的阶段（1-5）
+
+### 阶段 1：项目初始化 + 环境搭建 ✅
+- FastAPI 骨架、CORS、健康检查
+- Pydantic Settings 配置管理
+- Python 虚拟环境 + 依赖安装
+- Git 初始化
+
+### 阶段 2：接入 DeepSeek + 对话接口 ✅
+- `agent/prompts.py`：System Prompt v1（角色定义 + 能力边界）
+- `schemas/chat.py`：ChatRequest / ChatResponse 数据模型
+- `agent/chat_agent.py`：LangGraph 图（State → call_llm 节点 → END）
+- `main.py`：`/api/agent/chat`（非流式）和 `/api/agent/chat/stream`（SSE 流式）
+- Prompt v1 → v2 迭代
+
+### 阶段 3：数据库连接 + 查询 Tool ✅
+- `db/database.py`：aiomysql 异步连接 + `execute_query()` 通用查询
+- `agent/tools/sales_tools.py`：3 个 Tool（query_turnover、query_order_count、query_user_stats）
+- LangGraph 图升级：加入 ToolNode + 条件边（should_continue）
+- Prompt v2（告诉 LLM 有哪些工具 + 日期格式要求）
+- `generate_test_data.py`：生成 800 条订单 + 50 个用户 + 6 个套餐的测试数据
+
+### 阶段 4：扩展 Tool + Java API 对接 ✅
+- `agent/tools/dish_tools.py`：2 个 Tool（query_dish_list、query_dish_by_name）
+- `agent/tools/order_action_tools.py`：4 个 Tool（accept_order、reject_order、stop_dish、start_dish）
+  - 接单/拒单：通过 httpx 调用 Java 后端 REST API（JWT token 认证）
+  - 停售/起售：通过 httpx 调用 Java 后端 REST API
+- Token 管理机制：登录获取 token → 缓存 → 自动续期
+- Prompt v3（加入操作类工具说明 + 安全规则）
+
+### 阶段 5：多轮对话 + 会话管理 ✅
+- `agent/session.py`：会话存储模块（get_history / save_history / clear_history）
+- `chat_agent.py` 改造：加载历史 → 拼新消息 → 跑图 → 存回历史
+- MAX_HISTORY = 20（防止上下文过长）
+- 多轮对话测试通过（"那2024年呢"能正确理解上下文）
+
+---
+
+## 六、当前阶段 & 下一步
+
+### 当前：准备进入阶段 6 - 前端对接（Vue 对话 UI）
+
+**阶段 6 开发顺序清单**：
+1. **`admin-web/src/api/agent.ts`** — 封装 Agent API 请求（非流式 + SSE 流式）
+2. **`admin-web/src/views/agent/index.vue`** — 对话页面组件（聊天气泡、输入框、消息列表）
+3. **`admin-web/src/router.ts`** — 添加 Agent 页面路由
+4. **`admin-web/vue.config.js`** — 添加代理规则（/api/agent → localhost:8100）
+5. 启动前端 + 后端联调测试
+
+**阶段 6 教学重点**：
+- SSE 前端接收原理（EventSource 或 fetch + ReadableStream）
+- Vue 2 组件基础（data、methods、生命周期）
+- 前后端联调方法（代理配置、跨域处理）
+- Markdown 渲染（Agent 回复含表格、列表等格式）
+
+### 之后：阶段 7 - 全面测试 + Prompt 深度优化
+- 构建 50 题评测集（5 类问题 × 10 题）
+- 回归测试 + 边界测试
+- 准确率从 60% 迭代到 90%+
+
+---
+
+## 七、9 个 Tool 清单
+
+| Tool | 功能 | 实现方式 | 所在文件 |
+|------|------|---------|---------|
+| query_turnover | 查询营业额 | 查 MySQL | sales_tools.py |
+| query_order_count | 查询订单统计 | 查 MySQL | sales_tools.py |
+| query_user_stats | 查询用户统计 | 查 MySQL | sales_tools.py |
+| query_dish_list | 查询菜品列表 | 查 MySQL | dish_tools.py |
+| query_dish_by_name | 按名搜索菜品 | 查 MySQL | dish_tools.py |
+| accept_order | 接单 | 调 Java API | order_action_tools.py |
+| reject_order | 拒单 | 调 Java API | order_action_tools.py |
+| stop_dish | 停售菜品 | 调 Java API | order_action_tools.py |
+| start_dish | 起售菜品 | 调 Java API | order_action_tools.py |
+
+---
+
+## 八、Prompt 版本记录
+
+| 版本 | 改动 | 测试结果 |
+|------|------|---------|
+| v1 | 基础角色定义 + 能力边界 | 闲聊正常，问数据说"还在学习中" |
+| v2 | 加入工具说明 + 日期格式要求 | 能正确调用 3 个查询 Tool |
+| v3 | 加入操作类工具 + 安全规则 | 9 个 Tool 全部可用 |
+
+---
+
+## 九、关键配置信息
+
+| 配置项 | 值 |
+|--------|-----|
+| Agent 服务端口 | 8100 |
+| Java 后端端口 | 8080 |
+| 前端开发服务器端口 | 8888 |
+| MySQL 数据库名 | sky_take_out |
+| MySQL 密码 | 123456 |
+| Redis 密码 | 123456 |
+| DeepSeek 模型 | deepseek-chat |
+| DeepSeek API Base URL | https://api.deepseek.com |
+| Python 版本 | 3.12.4 |
+| Node 版本 | 24.18.0（通过 nvm 管理） |
+| Java 后端登录 | POST /admin/employee/login，admin / 123456 |
+| Java API Token Header | `token: <jwt_token>` |
+
+---
+
+## 十、数据库关键表
+
+| 表名 | 说明 | 数据量 |
+|------|------|--------|
+| orders | 订单表（状态 1-7） | 800 条（2024-2026） |
+| order_detail | 订单明细 | 1931 条 |
+| dish | 菜品表 | 24 道 |
+| setmeal | 套餐表 | 6 个 |
+| category | 分类表 | 10 个 |
+| employee | 员工表 | 6 人 |
+| user | 用户表 | 52 人 |
+
+**订单状态码**：1=待付款, 2=待接单, 3=已接单, 4=派送中, 5=已完成, 6=已取消, 7=退款
+
+---
+
+## 十一、Git commit 记录
+
+```
+3771abe fix: 菜品停售/起售恢复走Java API(Redis密码问题已修复)
+aed07a1 fix: 菜品停售/起售改为直接DB操作(Java后端菜品接口500错误)
+c39b3b8 fix: 修复流程图生成代码(get_graph调用对象错误)
+abe84bf feat: 阶段3-5整合提交
+9e8f34c feat: 阶段5 - 多轮对话会话管理
+be5af20 feat: 阶段4 - 菜品查询Tool+订单操作Tool+Prompt v3
+a53bf83 feat: 阶段3 - 数据库连接+经营数据查询Tool+Prompt v2
+210c703 feat: 阶段2 - 接入DeepSeek+LangGraph Agent+SSE流式输出
+cbc08e5 docs: 添加项目上下文交接文档
+8053f2f feat: 阶段1 - 项目初始化
+```
+
+---
+
+## 十二、启动方式
+
+```powershell
+# 1. 启动 Agent 服务
+cd "e:\苍穹\苍穹外卖\agent-service"
+.\venv\Scripts\python.exe main.py
+
+# 2. 确保 Java 后端在跑（IDEA 运行 SkyApplication）
+
+# 3. 阶段 6 时需要启动前端
+cd "e:\苍穹\苍穹外卖\admin-web"
+$env:NODE_OPTIONS = "--openssl-legacy-provider"
+npm run serve
+```
+
+---
+
+## 十三、给新对话的指令
+
+当用户把本文件发给你时，你应该：
+1. 阅读本文件，了解项目全貌和当前进度
+2. 确认当前阶段（第六节"当前阶段"部分）
+3. 按教学模式（第三节）的风格继续教学
+4. 每个阶段开始前，先给出"开发顺序清单"（先写什么、再写什么、为什么）
+5. 先确认用户是否已阅读上一阶段的代码，再继续新内容
+# 苍穹外卖 - 商家智能助手 Agent 项目上下文文档
+
+> **用途**：当对话过长导致 AI 出现幻觉时，开一个新对话，把本文件发给 AI，它可以立即了解当前项目状态并继续工作。
+
+---
+
+## 一、项目概述
+
+- **项目名**：苍穹外卖 - 商家智能助手 Agent
+- **目标**：为苍穹外卖的管理端（admin-web）新增一个智能客服 Agent，面向**商家（店铺运营者）**，通过对话式交互辅助经营数据查询、订单处理、菜品管理和运营建议
+- **管理端用户定位**：商家（外卖店铺运营者），不是平台管理员，也不是消费者
+
+---
+
+## 二、技术栈
+
+| 组件 | 选型 | 说明 |
+|------|------|------|
+| Agent 框架 | **LangGraph**（图式，1.2.9） | 支持循环和条件分支，适合 Agent |
 | Web 框架 | **FastAPI**（0.139.0） | Python 异步 Web 框架，类比 Spring Boot |
 | LLM 模型 | **DeepSeek** API | 兼容 OpenAI 协议，用 langchain-openai 调用 |
 | 数据库 | **MySQL**（sky_take_out） | 本地已部署，已有数据 |
