@@ -20,7 +20,14 @@ from langchain_core.messages import BaseMessage
 MAX_HISTORY = 20
 
 # 会话存储：{session_id: [消息列表]}
+"""
+    {
+  "会话A的uuid": [消息1, 消息2, ...],
+  "会话B的uuid": [消息1, ...],
+    }
+"""
 _sessions: dict[str, list[BaseMessage]] = {}
+
 
 
 def get_history(session_id: str) -> list[BaseMessage]:

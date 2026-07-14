@@ -25,6 +25,14 @@ from fastapi.responses import StreamingResponse
 from config import settings
 from schemas.chat import ChatRequest, ChatResponse
 import json
+import logging
+
+# ============================================================
+# 第零步：初始化日志系统（7 大模块 - 日志）
+# ============================================================
+# 在所有其他模块导入之前，先配置好日志
+from agent.logging_config import setup_logging
+setup_logging(log_level=logging.INFO)
 
 # ============================================================
 # 第一步：创建 FastAPI 应用实例
