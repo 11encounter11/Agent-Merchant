@@ -191,9 +191,14 @@ async def chat_stream(request: ChatRequest):
         # 先发送 session_id
         yield f"data: {json.dumps({'type': 'session', 'session_id': session_id}, ensure_ascii=False)}\n\n"
 
-        # 逐块发送 AI 的回复（chat_stream 返回异步生成器）
+        # 逐块发送（chat_stream 现在返回字典，包含 type 字段）
         async for chunk in agent_chat_stream(request.message, session_id):
-            yield f"data: {json.dumps({'type': 'content', 'content': chunk}, ensure_ascii=False)}\n\n"
+            if isinstance(chunk, dict):
+                # 新格式：字典，包含 type 字段
+                yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+            else:
+                # 旧格式：纯字符串（兼容）
+                yield f"data: {json.dumps({'type': 'content', 'content': chunk}, ensure_ascii=False)}\n\n"
 
         # 发送结束标记
         yield f"data: {json.dumps({'type': 'done'})}\n\n"

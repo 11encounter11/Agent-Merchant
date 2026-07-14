@@ -1,0 +1,151 @@
+[
+  {
+    "id": "MT01",
+    "description": "上下文指代：营业额追问",
+    "turns": [
+      {"role": "user", "content": "今天营业额多少"},
+      {"role": "user", "content": "那昨天呢"},
+      {"role": "user", "content": "对比一下"}
+    ],
+    "expect": "第二轮能理解在问昨天营业额，第三轮能对比今天和昨天"
+  },
+  {
+    "id": "MT02",
+    "description": "上下文指代：订单状态追问",
+    "turns": [
+      {"role": "user", "content": "今天有多少订单"},
+      {"role": "user", "content": "其中完成的有几个"},
+      {"role": "user", "content": "完成率怎么样"}
+    ],
+    "expect": "第二轮知道在问今天的已完成订单，第三轮能计算完成率"
+  },
+  {
+    "id": "MT03",
+    "description": "条件修改：菜品查询后操作",
+    "turns": [
+      {"role": "user", "content": "现在有哪些菜在卖"},
+      {"role": "user", "content": "最贵的是哪个"},
+      {"role": "user", "content": "把它停售"}
+    ],
+    "expect": "第三轮能理解'它'指上一轮提到的最贵的菜"
+  },
+  {
+    "id": "MT04",
+    "description": "时间范围追问",
+    "turns": [
+      {"role": "user", "content": "这周营业额多少"},
+      {"role": "user", "content": "上周呢"},
+      {"role": "user", "content": "哪周更好"}
+    ],
+    "expect": "能分别查询本周和上周，并做对比分析"
+  },
+  {
+    "id": "MT05",
+    "description": "多步操作：查询+确认+执行",
+    "turns": [
+      {"role": "user", "content": "有没有待接单的订单"},
+      {"role": "user", "content": "帮我接最新的"}
+    ],
+    "expect": "第一轮查询，第二轮基于查询结果接单"
+  },
+  {
+    "id": "MT06",
+    "description": "分类追问",
+    "turns": [
+      {"role": "user", "content": "菜品分类有哪些"},
+      {"role": "user", "content": "烤鱼分类下有什么"},
+      {"role": "user", "content": "哪个最便宜"}
+    ],
+    "expect": "第三轮能理解在问烤鱼分类下最便宜的菜"
+  },
+  {
+    "id": "MT07",
+    "description": "数据追问：营业额趋势",
+    "turns": [
+      {"role": "user", "content": "最近7天营业额趋势"},
+      {"role": "user", "content": "哪天最高"},
+      {"role": "user", "content": "那天有什么特别的订单吗"}
+    ],
+    "expect": "能识别最高的一天，并查询那天的订单详情"
+  },
+  {
+    "id": "MT08",
+    "description": "操作后确认",
+    "turns": [
+      {"role": "user", "content": "把东坡肘子停售"},
+      {"role": "user", "content": "确认停售"},
+      {"role": "user", "content": "现在还有哪些菜在卖"}
+    ],
+    "expect": "停售后再查询，应该看不到东坡肘子"
+  },
+  {
+    "id": "MT09",
+    "description": "用户统计追问",
+    "turns": [
+      {"role": "user", "content": "目前总共有多少用户"},
+      {"role": "user", "content": "这个月新增了多少"},
+      {"role": "user", "content": "上个月呢"}
+    ],
+    "expect": "第三轮能理解在问上个月新增用户数"
+  },
+  {
+    "id": "MT10",
+    "description": "否定修正",
+    "turns": [
+      {"role": "user", "content": "今天营业额多少"},
+      {"role": "user", "content": "不对，我是问这周的"},
+      {"role": "user", "content": "按天拆分看看"}
+    ],
+    "expect": "第二轮能修正查询范围，第三轮能按天展示"
+  },
+  {
+    "id": "MT11",
+    "description": "订单+菜品联动",
+    "turns": [
+      {"role": "user", "content": "今天完成了多少单"},
+      {"role": "user", "content": "这些订单都点了什么菜"},
+      {"role": "user", "content": "哪个菜卖得最好"}
+    ],
+    "expect": "能查询订单明细，分析菜品销量"
+  },
+  {
+    "id": "MT12",
+    "description": "批量操作",
+    "turns": [
+      {"role": "user", "content": "现在有哪些菜"},
+      {"role": "user", "content": "把20元以下的菜都找出来"},
+      {"role": "user", "content": "第一个帮我停售"}
+    ],
+    "expect": "第三轮能理解在停售上一轮结果中的第一个菜"
+  },
+  {
+    "id": "MT13",
+    "description": "时间段对比",
+    "turns": [
+      {"role": "user", "content": "上月营业额多少"},
+      {"role": "user", "content": "上上月呢"},
+      {"role": "user", "content": "环比增长了多少"}
+    ],
+    "expect": "能计算两个月的环比增长率"
+  },
+  {
+    "id": "MT14",
+    "description": "退款追踪",
+    "turns": [
+      {"role": "user", "content": "今天有退款的吗"},
+      {"role": "user", "content": "退款金额多少"},
+      {"role": "user", "content": "这周退款率怎么样"}
+    ],
+    "expect": "能逐步深入分析退款情况"
+  },
+  {
+    "id": "MT15",
+    "description": "经营建议追问",
+    "turns": [
+      {"role": "user", "content": "这周生意怎么样"},
+      {"role": "user", "content": "有什么改进建议"},
+      {"role": "user", "content": "具体怎么做"}
+    ],
+    "expect": "能基于数据给出具体可执行的建议"
+  }
+]

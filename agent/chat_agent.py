@@ -271,7 +271,14 @@ async def chat(message: str, session_id: str = None) -> dict:
 
 
 def chat_stream(message: str, session_id: str = None):
-    """流式对话（走图结构，支持多轮对话，集成 7 大模块）"""
+    """
+    流式对话（走图结构，支持多轮对话，集成 7 大模块）
+    
+    yield 的数据格式（字典）：
+    - {"type": "content", "content": "..."} — AI 回复的文字片段
+    - {"type": "tool_call", "tool": "query_turnover", "args": {...}} — Tool 调用开始
+    - {"type": "tool_result", "tool": "query_turnover", "result": "..."} — Tool 调用结果
+    """
     if session_id is None:
         session_id = str(uuid.uuid4())
 
@@ -285,6 +292,8 @@ def chat_stream(message: str, session_id: str = None):
     }
 
     async def async_generator():
+        from langchain_core.messages import ToolMessage
+        
         # 收集本次对话产生的所有消息（用于保存历史）
         collected = []
 
@@ -293,10 +302,31 @@ def chat_stream(message: str, session_id: str = None):
             stream_mode="messages"
         ):
             msg, metadata = chunk
-
+            
+            # AI 回复内容
             if msg.content and isinstance(msg, AIMessage):
                 collected.append(msg)
-                yield msg.content
+                
+                # 检查是否有工具调用
+                if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                    for tc in msg.tool_calls:
+                        yield {
+                            "type": "tool_call",
+                            "tool": tc["name"],
+                            "args": tc["args"]
+                        }
+                else:
+                    # 普通文字内容
+                    yield {"type": "content", "content": msg.content}
+            
+            # 工具返回结果
+            elif isinstance(msg, ToolMessage):
+                collected.append(msg)
+                yield {
+                    "type": "tool_result",
+                    "tool": msg.name,
+                    "result": msg.content[:200]  # 只返回前 200 字
+                }
 
         # 保存历史（用记忆模块）
         if collected:

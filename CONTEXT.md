@@ -18,6 +18,328 @@
 |------|------|------|
 | Agent 框架 | **LangGraph**（图式，1.2.9） | 支持循环和条件分支，适合 Agent |
 | Web 框架 | **FastAPI**（0.139.0） | Python 异步 Web 框架 |
+| LLM 模型 | **qwen-max**（通义千问） | 通过 DashScope OpenAI 兼容接口调用 |
+| 向量数据库 | **chromadb** | RAG 知识库，DashScope text-embedding-v3 |
+| 数据库 | **MySQL**（sky_take_out） | 本地已部署，含 800 条测试数据 |
+| 前端 | **Vue 2 + Element UI** | 已有项目，对话 UI 已完成 |
+| Java 后端 | **Spring Boot 2.7.3** | 已有项目，监听 8080 端口 |
+| Agent 服务 | FastAPI | 监听 **8100 端口** |
+
+---
+
+## 三、教学模式
+
+- **模式 C（混合模式）**：简单的我写好让学员理解，核心的带学员一起写，优化迭代教学员方法论
+- **学员基础**：
+  - Python：基础语法会一些，很多语法不会，学过 LangChain/LangGraph 初步
+  - Spring Boot：只了解少量注解含义，很多步骤不清楚
+- **教学风格要求**：
+  - 每段代码加详细中文注释
+  - Java 类比仅限于 FastAPI 接口层（路由、中间件），其他部分不用 Java 类比
+  - 核心知识点要先讲原理再写代码
+  - Prompt 要带着学员一起迭代，不能一次给最终版
+  - 每个阶段开始前，先给出"开发顺序清单"（先写什么文件、再写什么、为什么）
+
+---
+
+## 四、项目目录结构
+
+```
+e:/苍穹/苍穹外卖/
+├── backend/                          # Java 后端（Spring Boot，已有，不动）
+├── admin-web/                        # 管理端前端（Vue 2，已有）
+│   └── src/
+│       ├── views/agent/index.vue     # 对话页面（已完成）
+│       ├── api/agent.ts              # SSE 流式 API 封装
+│       └── router.ts                 # 路由（含 /agent 路径）
+├── agent-service/                    # Python Agent 服务
+│   ├── main.py                       # FastAPI 入口 + 日志初始化
+│   ├── config.py                     # 配置管理（Pydantic Settings）
+│   ├── .env                          # 环境变量（不提交 Git）
+│   ├── requirements.txt              # Python 依赖
+│   ├── run_eval.py                   # 50 题单轮评测脚本
+│   ├── run_multiturn_eval.py         # 15 组多轮对话评测脚本
+│   ├── eval_dataset.json             # 50 题评测集
+│   ├── eval_multiturn.json           # 15 组多轮对话评测集
+│   ├── test_framework.py             # 7 大模块框架验证脚本
+│   ├── CONTEXT.md                    # 本文件
+│   ├── agent/
+│   │   ├── chat_agent.py             # [规划模块] LangGraph 图 + 对外接口
+│   │   ├── prompts.py                # [规划模块] System Prompt v3
+│   │   ├── perception.py             # [感知模块] 输入预处理 + 意图分类
+│   │   ├── memory.py                 # [记忆模块] 会话记忆 + 知识记忆
+│   │   ├── reflection.py             # [反思模块] 输出校验/身份/边界
+│   │   ├── logging_config.py         # [日志模块] 统一日志配置
+│   │   ├── session.py                # [记忆-工作记忆] JSON 文件持久化
+│   │   ├── knowledge/                # [记忆-长期记忆] RAG 知识库
+│   │   │   ├── knowledge_base.py     # 混合检索（关键词 + 向量）
+│   │   │   └── data/                 # 知识文档（JSON 格式）
+│   │   │       ├── holidays.json     # 节假日日期表
+│   │   │       ├── dish_aliases.json # 菜品别名映射
+│   │   │       ├── boundary.json     # 能力边界规则
+│   │   │       ├── identity.json     # 身份声明规则
+│   │   │       └── faq.json          # 常见问答模板
+│   │   └── tools/                    # [工具模块]
+│   │       ├── tool_registry.py      # 统一注册/调用/日志
+│   │       ├── sales_tools.py        # 营业额/订单/用户（查 MySQL）
+│   │       ├── dish_tools.py         # 菜品列表/搜索（查 MySQL）
+│   │       └── order_action_tools.py # 接单/拒单/停售/起售（调 Java API）
+│   ├── db/
+│   │   └── database.py               # MySQL 异步连接（aiomysql）
+│   ├── schemas/
+│   │   └── chat.py                   # ChatRequest / ChatResponse 模型
+│   ├── docs/
+│   │   └── PROJECT_RETROSPECTIVE.md  # 项目问题回顾文档
+│   ├── eval_results/                 # 评测结果目录
+│   ├── logs/                         # 日志目录
+│   └── data/sessions/                # 会话持久化目录
+└── database/
+    └── sky.sql                       # 数据库建表 SQL
+```
+
+---
+
+## 五、已完成的阶段（全部 7 个阶段）
+
+### 阶段 1-5：核心功能 ✅
+- FastAPI 骨架 + CORS + 健康检查
+- LLM 接入（qwen-max）+ SSE 流式输出
+- MySQL 异步连接 + 9 个业务 Tool
+- Java API 对接（JWT token 认证）
+- 多轮对话 + 会话管理
+
+### 阶段 6：前端对话 UI ✅
+- Vue 2 对话页面（`views/agent/index.vue`）
+- SSE 流式渲染 + Markdown 渲染 + 打字机效果
+- Tool 调用状态展示（🔧 正在查询营业额...）
+
+### 阶段 7：测试 + 优化 ✅
+- 50 题评测集 + 自动评测脚本
+- 评测通过率：**96%**（48/50，2 题为启动瞬态问题）
+- 3 个模型对比测试（deepseek-chat / deepseek-v4-pro / qwen-max）
+
+### 架构升级：7 大正交模块 ✅
+参照生产级 Agent 架构，拆分为 7 个独立模块：
+1. **通信模块**（main.py）：FastAPI + SSE 流式协议
+2. **感知模块**（perception.py）：输入清洗 + 意图预分类
+3. **记忆模块**（memory.py + session.py + knowledge/）：三层记忆
+4. **规划模块**（chat_agent.py + prompts.py）：LangGraph ReAct 循环
+5. **工具模块**（tools/ + tool_registry.py）：9 个工具 + 统一注册
+6. **反思模块**（reflection.py）：身份检查 + 边界拦截
+7. **日志模块**（logging_config.py）：控制台 + 文件双输出
+
+### 近期改进 ✅
+- **RAG 混合检索**：关键词匹配层 + DashScope 中文 embedding（text-embedding-v3）
+- **会话持久化**：session.py 从内存 dict 改为 JSON 文件存储
+- **多轮对话评测**：15 组多轮对话测试用例
+- **Tool 调用状态展示**：SSE 新增 tool_call / tool_result 事件
+- **Bug 修复**：5 个 Bug（E10 身份替换、A10 按天拆分、C04/D04 停售查询、E03 边界拒绝、A09 端午节日期）
+- **RAG 知识库填充**：24 条知识（5 个 JSON 文件）
+
+---
+
+## 六、当前状态 & 下一步
+
+### 当前状态
+- 7 个阶段全部完成
+- 7 大模块架构已搭建
+- RAG 知识库已填充（混合检索）
+- 评测通过率 96%
+- 项目回顾文档已创建
+
+### 下一步可选方向
+
+**中期改进**：
+1. 中文 embedding 优化（修复 A01/A10 启动瞬态 500 错误）
+2. 会话管理 UI（前端增加历史会话列表/切换）
+3. Token 消耗监控（记录每次 LLM 调用的 token 数）
+
+**远期改进**：
+1. 意图预分类（轻量模型做快速意图识别，减少 LLM 调用）
+2. 主动推送（Agent 主动提醒商家）
+3. 经营报告生成（定时生成日/周/月经营分析）
+4. 多 Agent 协作（拆分为数据查询 Agent + 运营建议 Agent）
+
+---
+
+## 七、7 大模块架构详解
+
+### 数据流
+
+```
+用户输入 → [通信模块] → [感知模块:清洗] → [记忆模块:组装上下文] → [规划模块:LLM] → 要不要调Tool?
+                                                                                    ↓ 要           ↓ 不要
+                                                                              [工具模块]      [反思模块:校验] → [通信模块] → 用户
+                                                                                ↓
+                                                                          回到 [规划模块]
+```
+
+### 各模块职责
+
+| 模块 | 文件 | 职责 |
+|------|------|------|
+| 通信 | main.py | FastAPI 服务，定义 API 接口（/api/agent/chat, /api/agent/chat/stream） |
+| 感知 | perception.py | 输入清洗（去空格/控制字符），预留意图分类接口 |
+| 记忆 | memory.py + session.py + knowledge/ | 工作记忆（对话历史 JSON 文件）+ 长期记忆（RAG 向量检索） |
+| 规划 | chat_agent.py + prompts.py | LangGraph 有向图编排，ReAct 循环（思考→行动→观察） |
+| 工具 | tools/ + tool_registry.py | 9 个业务工具，统一注册/调用/日志/错误处理 |
+| 反思 | reflection.py | 输出校验（身份关键词替换、边界拦截） |
+| 日志 | logging_config.py | 统一日志配置（控制台 + logs/agent.log） |
+
+---
+
+## 八、RAG 知识库
+
+### 混合检索策略
+
+检索分三层，合并去重后返回 top_k 条结果：
+
+1. **关键词规则匹配**（KEYWORD_RULES）：确定性最高，只要用户输入包含关键词就返回
+2. **文档关键词匹配**（data/ 中 JSON 的 keywords 字段）
+3. **向量语义检索**（chromadb + DashScope text-embedding-v3）：处理模糊表达
+
+### 知识文档
+
+| 文件 | 内容 | 条数 |
+|------|------|------|
+| holidays.json | 节假日日期表（端午/中秋/国庆等） | 7 条 |
+| dish_aliases.json | 菜品别名映射（素菜=新鲜时蔬） | 7 条 |
+| boundary.json | 能力边界规则（营销文案拒绝话术） | 3 条 |
+| identity.json | 身份声明规则（不暴露模型名） | 3 条 |
+| faq.json | 常见问答模板（打招呼/退款/打折） | 4 条 |
+
+---
+
+## 九、9 个 Tool 清单
+
+| Tool | 功能 | 参数 | 实现方式 |
+|------|------|------|---------|
+| query_turnover | 查询营业额 | begin_date, end_date, **group_by_day** | 查 MySQL |
+| query_order_count | 查询订单统计 | begin_date, end_date | 查 MySQL |
+| query_user_stats | 查询用户统计 | begin_date, end_date | 查 MySQL |
+| query_dish_list | 查询菜品列表 | category_name, **status** | 查 MySQL |
+| query_dish_by_name | 按名搜索菜品 | dish_name | 查 MySQL |
+| accept_order | 接单 | order_id | 调 Java API |
+| reject_order | 拒单 | order_id, reason | 调 Java API |
+| stop_dish | 停售菜品 | dish_id | 调 Java API |
+| start_dish | 起售菜品 | dish_id | 调 Java API |
+
+加粗参数为最近新增的参数。
+
+---
+
+## 十、评测结果
+
+### 单轮评测（50 题）
+- 评测脚本：`run_eval.py`
+- 评测集：`eval_dataset.json`（5 大类 × 10 题）
+- 最新通过率：**96%**（48/50）
+- 失败项：A01/A10 为启动瞬态 500 错误（DashScope embedding 初始化延迟）
+
+### 多轮对话评测（15 组）
+- 评测脚本：`run_multiturn_eval.py`
+- 评测集：`eval_multiturn.json`（15 组多轮对话）
+- 覆盖场景：上下文指代、条件修改、否定修正、批量操作、经营建议追问
+
+---
+
+## 十一、关键配置信息
+
+| 配置项 | 值 |
+|--------|-----|
+| Agent 服务端口 | 8100 |
+| Java 后端端口 | 8080 |
+| 前端开发服务器端口 | 8888 |
+| MySQL 数据库名 | sky_take_out |
+| MySQL 密码 | 123456 |
+| Redis 密码 | 123456 |
+| LLM 模型 | qwen-max（通义千问，阿里云 DashScope） |
+| LLM API Base URL | https://dashscope.aliyuncs.com/compatible-mode/v1 |
+| Embedding 模型 | text-embedding-v3（DashScope） |
+| LLM API Key 变量名 | LLM_API_KEY（在 .env 中配置） |
+| Python 版本 | 3.12.4 |
+| Node 版本 | 24.18.0（通过 nvm 管理） |
+| Java 后端登录 | POST /admin/employee/login，admin / 123456 |
+| Java API Token Header | `token: <jwt_token>` |
+
+---
+
+## 十二、启动方式
+
+```powershell
+# 1. 启动 Agent 服务（必须用 venv 的 Python）
+cd "e:\苍穹\苍穹外卖\agent-service"
+.\venv\Scripts\python.exe main.py
+
+# 2. 确保 Java 后端在跑（IDEA 运行 SkyApplication）
+
+# 3. 启动前端（阶段 6 需要）
+cd "e:\苍穹\苍穹外卖\admin-web"
+$env:NODE_OPTIONS = "--openssl-legacy-provider"
+npm run serve
+
+# 4. 跑评测
+.\venv\Scripts\python.exe run_eval.py              # 50 题单轮评测
+.\venv\Scripts\python.exe run_multiturn_eval.py     # 15 组多轮评测
+.\venv\Scripts\python.exe test_framework.py         # 框架验证
+```
+
+---
+
+## 十三、Git commit 记录
+
+```
+f8345bd fix: 修复5个Bug + 填充RAG知识库 + 回归测试98% + 项目回顾文档
+463b6ae feat: 7大模块架构搭建(感知/记忆/RAG知识库/工具管理/反思/日志)
+b2ef00f feat: 阶段7 - 切换qwen-max模型(100%通过率) + Bug分析
+92fd6ad docs: deepseek-chat vs deepseek-v4-pro 对比评测分析
+9b891ef docs: 第一轮评测Bug记录(6个问题) + 企业测试方法论
+ee17f8e feat: 阶段7 - 添加评测集(50题)和自动测试脚本
+0c40b0c feat: 阶段6 Prompt迭代 - 日期注入改用V2模板
+3cd93c2 fix: Prompt动态注入当前日期
+0a92dc0 docs: 更新CONTEXT.md交接文档(阶段1-5全部完成)
+3771abe fix: 菜品停售/起售恢复走Java API
+aed07a1 fix: 菜品停售/起售改为直接DB操作
+c39b3b8 fix: 修复流程图生成代码
+abe84bf feat: 阶段3-5整合提交
+9e8f34c feat: 阶段5 - 多轮对话会话管理
+be5af20 feat: 阶段4 - 菜品查询Tool+订单操作Tool+Prompt v3
+a53bf83 feat: 阶段3 - 数据库连接+经营数据查询Tool+Prompt v2
+210c703 feat: 阶段2 - 接入DeepSeek+LangGraph Agent+SSE流式输出
+cbc08e5 docs: 添加项目上下文交接文档
+8053f2f feat: 阶段1 - 项目初始化
+```
+
+---
+
+## 十四、给新对话的指令
+
+当用户把本文件发给你时，你应该：
+1. 阅读本文件，了解项目全貌和当前进度
+2. 确认当前状态（第六节）
+3. 按教学模式（第三节）的风格继续教学
+4. 每个任务开始前，先给出"开发顺序清单"（先写什么文件、再写什么、为什么）
+5. 先确认用户是否已理解相关代码，再继续新内容
+# 苍穹外卖 - 商家智能助手 Agent 项目上下文文档
+
+> **用途**：当对话过长导致 AI 出现幻觉时，开一个新对话，把本文件发给 AI，它可以立即了解当前项目状态并继续工作。
+
+---
+
+## 一、项目概述
+
+- **项目名**：苍穹外卖 - 商家智能助手 Agent
+- **目标**：为苍穹外卖的管理端（admin-web）新增一个智能客服 Agent，面向**商家（店铺运营者）**，通过对话式交互辅助经营数据查询、订单处理、菜品管理和运营建议
+- **管理端用户定位**：商家（外卖店铺运营者），不是平台管理员，也不是消费者
+
+---
+
+## 二、技术栈
+
+| 组件 | 选型 | 说明 |
+|------|------|------|
+| Agent 框架 | **LangGraph**（图式，1.2.9） | 支持循环和条件分支，适合 Agent |
+| Web 框架 | **FastAPI**（0.139.0） | Python 异步 Web 框架 |
 | LLM 模型 | **DeepSeek** API | 兼容 OpenAI 协议，用 langchain-openai 调用 |
 | 数据库 | **MySQL**（sky_take_out） | 本地已部署，含800条测试数据 |
 | 前端 | **Vue 2 + Element UI** | 已有项目，需新增对话组件 |
