@@ -11,31 +11,57 @@ from db.database import execute_query
 
 
 @tool
-async def query_turnover(begin_date: str, end_date: str) -> str:
+async def query_turnover(begin_date: str, end_date: str, group_by_day: bool = False) -> str:
     """
     查询指定日期范围内的营业额。
 
-    营业额 = 该时间段内所有"已完成"订单（status=5）的金额总和。
+    营业额 = 该时间段内所有“已完成”订单（status=5）的金额总和。
 
     参数：
-        begin_date: 开始日期，格式 "YYYY-MM-DD"，例如 "2026-07-01"
-        end_date:   结束日期，格式 "YYYY-MM-DD"，例如 "2026-07-12"
+        begin_date: 开始日期，格式 “YYYY-MM-DD”，例如 “2026-07-01”
+        end_date:   结束日期，格式 “YYYY-MM-DD”，例如 “2026-07-12”
+        group_by_day: 是否按天拆分（可选，默认 False）
 
     使用场景：
-        - "今天营业额多少？" → begin_date=今天, end_date=今天
-        - "这个月赚了多少？"  → begin_date=本月1号, end_date=今天
-        - "上周的营收呢？"    → begin_date=上周一, end_date=上周日
+        - “今天营业额多少？” → begin_date=今天, end_date=今天
+        - “这个月赚了多少？”  → begin_date=本月1号, end_date=今天
+        - “上周的营收呢？”    → begin_date=上周一, end_date=上周日
+        - “最近30天每天营业额” → begin_date=30天前, end_date=今天, group_by_day=True
     """
-    sql = """
-        SELECT COALESCE(SUM(amount), 0) AS total_turnover
-        FROM orders
-        WHERE status = 5
-          AND DATE(order_time) BETWEEN %s AND %s
-    """
-    rows = await execute_query(sql, (begin_date, end_date))
-    total = float(rows[0]["total_turnover"])
+    if group_by_day:
+        # 按天拆分返回
+        sql = """
+            SELECT DATE(order_time) AS order_date, COALESCE(SUM(amount), 0) AS turnover
+            FROM orders
+            WHERE status = 5
+              AND DATE(order_time) BETWEEN %s AND %s
+            GROUP BY DATE(order_time)
+            ORDER BY order_date
+        """
+        rows = await execute_query(sql, (begin_date, end_date))
+        
+        if not rows:
+            return f"从 {begin_date} 到 {end_date} 没有营业额数据。"
+        
+        lines = [f"从 {begin_date} 到 {end_date} 每天的营业额："]
+        for row in rows:
+            date_str = str(row['order_date'])
+            turnover = float(row['turnover'])
+            lines.append(f"  {date_str}: {turnover:.2f} 元")
+        
+        return "\n".join(lines)
+    else:
+        # 返回总和
+        sql = """
+            SELECT COALESCE(SUM(amount), 0) AS total_turnover
+            FROM orders
+            WHERE status = 5
+              AND DATE(order_time) BETWEEN %s AND %s
+        """
+        rows = await execute_query(sql, (begin_date, end_date))
+        total = float(rows[0]["total_turnover"])
 
-    return f"从 {begin_date} 到 {end_date} 的营业额为：{total:.2f} 元"
+        return f"从 {begin_date} 到 {end_date} 的营业额为：{total:.2f} 元"
 
 
 @tool

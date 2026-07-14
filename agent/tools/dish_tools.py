@@ -10,42 +10,46 @@ from db.database import execute_query
 
 
 @tool
-async def query_dish_list(category_name: str = "") -> str:
+async def query_dish_list(category_name: str = "", status: int = 1) -> str:
     """
     查询菜品列表。
 
     参数：
-        category_name: 分类名称（可选）。为空时返回所有起售中的菜品。
-                       例如 "蜀味烤鱼"、"酒水饮料"、"新鲜时蔬"
+        category_name: 分类名称（可选）。为空时返回所有指定状态的菜品。
+                       例如 “蜀味烤鱼”、“酒水饮料”、“新鲜时蔬”
+        status: 菜品状态（可选，默认 1=在售）。0=停售, 1=在售
 
     使用场景：
-        - "现在有哪些菜品？"
-        - "蜀味烤鱼分类下有什么菜？"
-        - "目前在售的菜品有多少？"
+        - “现在有哪些菜品？” → 默认查在售
+        - “蜀味烤鱼分类下有什么菜？” → category_name="蜀味烤鱼"
+        - “目前在售的菜品有多少？” → status=1（默认）
+        - “有哪些菜停售了” → status=0
     """
+    status_text = "在售" if status == 1 else "停售"
+    
     if category_name:
         sql = """
             SELECT d.id, d.name, d.price, d.status, c.name as category_name
             FROM dish d
             JOIN category c ON d.category_id = c.id
-            WHERE c.name = %s AND d.status = 1
+            WHERE c.name = %s AND d.status = %s
             ORDER BY d.id
         """
-        rows = await execute_query(sql, (category_name,))
+        rows = await execute_query(sql, (category_name, status))
     else:
         sql = """
             SELECT d.id, d.name, d.price, d.status, c.name as category_name
             FROM dish d
             JOIN category c ON d.category_id = c.id
-            WHERE d.status = 1
+            WHERE d.status = %s
             ORDER BY c.sort, d.id
         """
-        rows = await execute_query(sql)
+        rows = await execute_query(sql, (status,))
 
     if not rows:
-        return f"没有找到{'分类 ' + category_name + ' 下的' if category_name else ''}在售菜品。"
+        return f"没有找到{'分类 ' + category_name + ' 下的' if category_name else ''}{status_text}菜品。"
 
-    lines = [f"共 {len(rows)} 个在售菜品：\n"]
+    lines = [f"共 {len(rows)} 个{status_text}菜品：\n"]
     current_cat = ""
     for r in rows:
         if r["category_name"] != current_cat:

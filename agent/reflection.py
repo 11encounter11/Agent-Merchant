@@ -57,7 +57,7 @@ class Reflection:
     
     def check_identity(self, response: str) -> str:
         """
-        检查是否暴露底层模型身份，如有则替换。
+        检查是否暴露底层模型身份，如有则替换整句。
         
         参数：
             response: LLM 原始回复
@@ -67,20 +67,23 @@ class Reflection:
         
         检查规则：
         - 如果回复中包含身份关键词（如"通义千问"、"DeepSeek"），
-          尝试替换为安全的身份描述
+          用安全的身份描述替换整段话（而不是只替换关键词）
         """
         original = response
         
+        # 检查是否包含身份关键词
         for keyword in self.identity_keywords:
             if keyword.lower() in response.lower():
                 # 找到包含关键词的句子，替换整句
-                # 简单处理：替换关键词本身
-                pattern = re.compile(re.escape(keyword), re.IGNORECASE)
-                response = pattern.sub(self.identity_replacement, response)
+                # 简单处理：用正则匹配包含关键词的完整句子
+                pattern = r'[^。！？\n]*' + re.escape(keyword) + r'[^。！？\n]*[。！？]?'
+                replacement = self.identity_replacement + "。"
+                response = re.sub(pattern, replacement, response, flags=re.IGNORECASE)
                 
                 self.logger.warning(
-                    f"[Reflection] 身份校验触发: 关键词 '{keyword}' 被替换"
+                    f"[Reflection] 身份校验触发: 关键词 '{keyword}' 的句子被替换"
                 )
+                break  # 只替换一次，避免重复
         
         if original != response:
             self.logger.info(f"[Reflection] 身份清洗完成")

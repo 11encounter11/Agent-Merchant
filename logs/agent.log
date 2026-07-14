@@ -638,3 +638,547 @@
 2026-07-14 12:59:14 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 2
 2026-07-14 12:59:15 | Memory               | INFO     | [Memory] 保存工作记忆: session=00fb1b69-953a-4136-93b3-97cd91b8b747, 消息数=4
 2026-07-14 12:59:15 | Memory               | INFO     | [Memory] 保存工作记忆: session=ebd5bed9-e32a-4b55-a983-86485b6012ae, 消息数=4
+2026-07-14 22:21:41 | root                 | INFO     | ============================================================
+2026-07-14 22:21:41 | root                 | INFO     | 苍穹外卖 Agent 服务启动
+2026-07-14 22:21:41 | root                 | INFO     | 日志级别: INFO
+2026-07-14 22:21:41 | root                 | INFO     | 日志文件: logs\agent.log
+2026-07-14 22:21:41 | root                 | INFO     | ============================================================
+2026-07-14 22:21:41 | root                 | INFO     | ============================================================
+2026-07-14 22:21:41 | root                 | INFO     | 苍穹外卖 Agent 服务启动
+2026-07-14 22:21:41 | root                 | INFO     | 日志级别: INFO
+2026-07-14 22:21:41 | root                 | INFO     | 日志文件: logs\agent.log
+2026-07-14 22:21:41 | root                 | INFO     | ============================================================
+2026-07-14 22:24:50 | root                 | INFO     | ============================================================
+2026-07-14 22:24:50 | root                 | INFO     | 苍穹外卖 Agent 服务启动
+2026-07-14 22:24:50 | root                 | INFO     | 日志级别: INFO
+2026-07-14 22:24:50 | root                 | INFO     | 日志文件: logs\agent.log
+2026-07-14 22:24:50 | root                 | INFO     | ============================================================
+2026-07-14 22:24:50 | root                 | INFO     | ============================================================
+2026-07-14 22:24:50 | root                 | INFO     | 苍穹外卖 Agent 服务启动
+2026-07-14 22:24:50 | root                 | INFO     | 日志级别: INFO
+2026-07-14 22:24:50 | root                 | INFO     | 日志文件: logs\agent.log
+2026-07-14 22:24:50 | root                 | INFO     | ============================================================
+2026-07-14 22:25:29 | root                 | INFO     | ============================================================
+2026-07-14 22:25:29 | root                 | INFO     | 苍穹外卖 Agent 服务启动
+2026-07-14 22:25:29 | root                 | INFO     | 日志级别: INFO
+2026-07-14 22:25:29 | root                 | INFO     | 日志文件: logs\agent.log
+2026-07-14 22:25:29 | root                 | INFO     | ============================================================
+2026-07-14 22:25:29 | root                 | INFO     | ============================================================
+2026-07-14 22:25:29 | root                 | INFO     | 苍穹外卖 Agent 服务启动
+2026-07-14 22:25:29 | root                 | INFO     | 日志级别: INFO
+2026-07-14 22:25:29 | root                 | INFO     | 日志文件: logs\agent.log
+2026-07-14 22:25:29 | root                 | INFO     | ============================================================
+2026-07-14 22:26:12 | root                 | INFO     | ============================================================
+2026-07-14 22:26:12 | root                 | INFO     | 苍穹外卖 Agent 服务启动
+2026-07-14 22:26:12 | root                 | INFO     | 日志级别: INFO
+2026-07-14 22:26:12 | root                 | INFO     | 日志文件: logs\agent.log
+2026-07-14 22:26:12 | root                 | INFO     | ============================================================
+2026-07-14 22:26:12 | root                 | INFO     | ============================================================
+2026-07-14 22:26:12 | root                 | INFO     | 苍穹外卖 Agent 服务启动
+2026-07-14 22:26:12 | root                 | INFO     | 日志级别: INFO
+2026-07-14 22:26:12 | root                 | INFO     | 日志文件: logs\agent.log
+2026-07-14 22:26:12 | root                 | INFO     | ============================================================
+2026-07-14 22:29:32 | KnowledgeBase        | INFO     | [KnowledgeBase] chromadb 初始化成功
+2026-07-14 22:29:32 | KnowledgeBase        | INFO     | [KnowledgeBase] 开始加载知识文档: E:\苍穹\苍穹外卖\agent-service\agent\knowledge\data
+2026-07-14 22:29:47 | KnowledgeBase        | INFO     | [KnowledgeBase] 成功加载 24 条知识
+2026-07-14 22:29:47 | agent.tools.tool_registry | INFO     | [ToolRegistry] 注册工具: query_turnover
+2026-07-14 22:29:47 | agent.tools.tool_registry | INFO     | [ToolRegistry] 注册工具: query_order_count
+2026-07-14 22:29:47 | agent.tools.tool_registry | INFO     | [ToolRegistry] 注册工具: query_user_stats
+2026-07-14 22:29:47 | agent.tools.tool_registry | INFO     | [ToolRegistry] 注册工具: query_dish_list
+2026-07-14 22:29:47 | agent.tools.tool_registry | INFO     | [ToolRegistry] 注册工具: query_dish_by_name
+2026-07-14 22:29:47 | agent.tools.tool_registry | INFO     | [ToolRegistry] 注册工具: accept_order
+2026-07-14 22:29:47 | agent.tools.tool_registry | INFO     | [ToolRegistry] 注册工具: reject_order
+2026-07-14 22:29:47 | agent.tools.tool_registry | INFO     | [ToolRegistry] 注册工具: stop_dish
+2026-07-14 22:29:47 | agent.tools.tool_registry | INFO     | [ToolRegistry] 注册工具: start_dish
+2026-07-14 22:29:47 | langchain_openai.chat_models._client_utils | INFO     | langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+2026-07-14 22:29:49 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=7a8f6a59-fbb7-49e0-8414-b8e1ce263b61, message='今天营业额多少'
+2026-07-14 22:29:49 | Perception           | INFO     | [Perception] 原始输入: '今天营业额多少' → 清洗后: '今天营业额多少'
+2026-07-14 22:29:49 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '今天营业额多少', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:29:49 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=9e127458-7e29-446c-b121-a8af6008c979, message='昨天营业额是多少'
+2026-07-14 22:29:49 | Perception           | INFO     | [Perception] 原始输入: '昨天营业额是多少' → 清洗后: '昨天营业额是多少'
+2026-07-14 22:29:49 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '昨天营业额是多少', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:29:49 | Memory               | INFO     | [Memory] 获取工作记忆: session=7a8f6a59-fbb7-49e0-8414-b8e1ce263b61, 消息数=0
+2026-07-14 22:29:49 | Memory               | INFO     | [Memory] 获取工作记忆: session=9e127458-7e29-446c-b121-a8af6008c979, 消息数=0
+2026-07-14 22:29:49 | Memory               | INFO     | [Memory] 知识检索: query='今天营业额多少', 结果数=3
+2026-07-14 22:29:49 | Memory               | INFO     | [Memory] 知识检索: query='昨天营业额是多少', 结果数=3
+2026-07-14 22:29:49 | Memory               | INFO     | [Memory] 组装上下文: session=7a8f6a59-fbb7-49e0-8414-b8e1ce263b61, 总消息数=2
+2026-07-14 22:29:49 | Memory               | INFO     | [Memory] 组装上下文: session=9e127458-7e29-446c-b121-a8af6008c979, 总消息数=2
+2026-07-14 22:29:49 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=7a8f6a59-fbb7-49e0-8414-b8e1ce263b61, 消息数=2
+2026-07-14 22:29:49 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=9e127458-7e29-446c-b121-a8af6008c979, 消息数=2
+2026-07-14 22:29:49 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:29:49 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:29:51 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:29:51 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:29:52 | Memory               | INFO     | [Memory] 保存工作记忆: session=7a8f6a59-fbb7-49e0-8414-b8e1ce263b61, 消息数=5
+2026-07-14 22:29:52 | Memory               | INFO     | [Memory] 保存工作记忆: session=9e127458-7e29-446c-b121-a8af6008c979, 消息数=5
+2026-07-14 22:29:53 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=ea7cc1c9-83eb-449f-b048-40244d1d8cce, message='这周的营业额怎么样'
+2026-07-14 22:29:53 | Perception           | INFO     | [Perception] 原始输入: '这周的营业额怎么样' → 清洗后: '这周的营业额怎么样'
+2026-07-14 22:29:53 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '这周的营业额怎么样', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:29:53 | Memory               | INFO     | [Memory] 获取工作记忆: session=ea7cc1c9-83eb-449f-b048-40244d1d8cce, 消息数=0
+2026-07-14 22:29:54 | Memory               | INFO     | [Memory] 知识检索: query='这周的营业额怎么样', 结果数=3
+2026-07-14 22:29:54 | Memory               | INFO     | [Memory] 组装上下文: session=ea7cc1c9-83eb-449f-b048-40244d1d8cce, 总消息数=2
+2026-07-14 22:29:54 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=ea7cc1c9-83eb-449f-b048-40244d1d8cce, 消息数=2
+2026-07-14 22:29:54 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:29:56 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:29:57 | Memory               | INFO     | [Memory] 保存工作记忆: session=ea7cc1c9-83eb-449f-b048-40244d1d8cce, 消息数=5
+2026-07-14 22:29:58 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=c0c1b2f9-be82-4963-8f73-52f86735a64f, message='上个月营业额多少'
+2026-07-14 22:29:58 | Perception           | INFO     | [Perception] 原始输入: '上个月营业额多少' → 清洗后: '上个月营业额多少'
+2026-07-14 22:29:58 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '上个月营业额多少', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:29:58 | Memory               | INFO     | [Memory] 获取工作记忆: session=c0c1b2f9-be82-4963-8f73-52f86735a64f, 消息数=0
+2026-07-14 22:29:58 | Memory               | INFO     | [Memory] 知识检索: query='上个月营业额多少', 结果数=3
+2026-07-14 22:29:58 | Memory               | INFO     | [Memory] 组装上下文: session=c0c1b2f9-be82-4963-8f73-52f86735a64f, 总消息数=2
+2026-07-14 22:29:58 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=c0c1b2f9-be82-4963-8f73-52f86735a64f, 消息数=2
+2026-07-14 22:29:58 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:29:59 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:30:00 | Memory               | INFO     | [Memory] 保存工作记忆: session=c0c1b2f9-be82-4963-8f73-52f86735a64f, 消息数=5
+2026-07-14 22:30:01 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=8550a48c-b39b-4472-a702-d839b73df9f7, message='最近7天的营业额趋势'
+2026-07-14 22:30:01 | Perception           | INFO     | [Perception] 原始输入: '最近7天的营业额趋势' → 清洗后: '最近7天的营业额趋势'
+2026-07-14 22:30:01 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '最近7天的营业额趋势', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:30:01 | Memory               | INFO     | [Memory] 获取工作记忆: session=8550a48c-b39b-4472-a702-d839b73df9f7, 消息数=0
+2026-07-14 22:30:02 | Memory               | INFO     | [Memory] 知识检索: query='最近7天的营业额趋势', 结果数=3
+2026-07-14 22:30:02 | Memory               | INFO     | [Memory] 组装上下文: session=8550a48c-b39b-4472-a702-d839b73df9f7, 总消息数=2
+2026-07-14 22:30:02 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=8550a48c-b39b-4472-a702-d839b73df9f7, 消息数=2
+2026-07-14 22:30:02 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:30:04 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:30:07 | Memory               | INFO     | [Memory] 保存工作记忆: session=8550a48c-b39b-4472-a702-d839b73df9f7, 消息数=5
+2026-07-14 22:30:08 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=144e301d-8d20-4baf-9ede-0735ed2a1737, message='2025年全年营业额是多少'
+2026-07-14 22:30:08 | Perception           | INFO     | [Perception] 原始输入: '2025年全年营业额是多少' → 清洗后: '2025年全年营业额是多少'
+2026-07-14 22:30:08 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '2025年全年营业额是多少', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:30:08 | Memory               | INFO     | [Memory] 获取工作记忆: session=144e301d-8d20-4baf-9ede-0735ed2a1737, 消息数=0
+2026-07-14 22:30:08 | Memory               | INFO     | [Memory] 知识检索: query='2025年全年营业额是多少', 结果数=3
+2026-07-14 22:30:08 | Memory               | INFO     | [Memory] 组装上下文: session=144e301d-8d20-4baf-9ede-0735ed2a1737, 总消息数=2
+2026-07-14 22:30:08 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=144e301d-8d20-4baf-9ede-0735ed2a1737, 消息数=2
+2026-07-14 22:30:08 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:30:09 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:30:10 | Memory               | INFO     | [Memory] 保存工作记忆: session=144e301d-8d20-4baf-9ede-0735ed2a1737, 消息数=5
+2026-07-14 22:30:11 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=c691391c-cb1d-4429-b6fd-461bd239d40c, message='今天和昨天营业额对比一下'
+2026-07-14 22:30:11 | Perception           | INFO     | [Perception] 原始输入: '今天和昨天营业额对比一下' → 清洗后: '今天和昨天营业额对比一下'
+2026-07-14 22:30:11 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '今天和昨天营业额对比一下', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:30:11 | Memory               | INFO     | [Memory] 获取工作记忆: session=c691391c-cb1d-4429-b6fd-461bd239d40c, 消息数=0
+2026-07-14 22:30:11 | Memory               | INFO     | [Memory] 知识检索: query='今天和昨天营业额对比一下', 结果数=3
+2026-07-14 22:30:11 | Memory               | INFO     | [Memory] 组装上下文: session=c691391c-cb1d-4429-b6fd-461bd239d40c, 总消息数=2
+2026-07-14 22:30:11 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=c691391c-cb1d-4429-b6fd-461bd239d40c, 消息数=2
+2026-07-14 22:30:11 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:30:14 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 6
+2026-07-14 22:30:15 | Memory               | INFO     | [Memory] 保存工作记忆: session=c691391c-cb1d-4429-b6fd-461bd239d40c, 消息数=6
+2026-07-14 22:30:16 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=740f89c2-1033-4c86-814d-b24866ca3daf, message='这个月目前赚了多少'
+2026-07-14 22:30:16 | Perception           | INFO     | [Perception] 原始输入: '这个月目前赚了多少' → 清洗后: '这个月目前赚了多少'
+2026-07-14 22:30:16 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '这个月目前赚了多少', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:30:16 | Memory               | INFO     | [Memory] 获取工作记忆: session=740f89c2-1033-4c86-814d-b24866ca3daf, 消息数=0
+2026-07-14 22:30:16 | Memory               | INFO     | [Memory] 知识检索: query='这个月目前赚了多少', 结果数=3
+2026-07-14 22:30:16 | Memory               | INFO     | [Memory] 组装上下文: session=740f89c2-1033-4c86-814d-b24866ca3daf, 总消息数=2
+2026-07-14 22:30:16 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=740f89c2-1033-4c86-814d-b24866ca3daf, 消息数=2
+2026-07-14 22:30:16 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:30:18 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:30:20 | Memory               | INFO     | [Memory] 保存工作记忆: session=740f89c2-1033-4c86-814d-b24866ca3daf, 消息数=5
+2026-07-14 22:30:21 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=71eebfbf-d985-43f0-b3a4-375400ea1640, message='端午节那几天生意怎么样'
+2026-07-14 22:30:21 | Perception           | INFO     | [Perception] 原始输入: '端午节那几天生意怎么样' → 清洗后: '端午节那几天生意怎么样'
+2026-07-14 22:30:21 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '端午节那几天生意怎么样', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:30:21 | Memory               | INFO     | [Memory] 获取工作记忆: session=71eebfbf-d985-43f0-b3a4-375400ea1640, 消息数=0
+2026-07-14 22:30:21 | Memory               | INFO     | [Memory] 知识检索: query='端午节那几天生意怎么样', 结果数=3
+2026-07-14 22:30:21 | Memory               | INFO     | [Memory] 组装上下文: session=71eebfbf-d985-43f0-b3a4-375400ea1640, 总消息数=2
+2026-07-14 22:30:21 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=71eebfbf-d985-43f0-b3a4-375400ea1640, 消息数=2
+2026-07-14 22:30:21 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:30:24 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:30:26 | Memory               | INFO     | [Memory] 保存工作记忆: session=71eebfbf-d985-43f0-b3a4-375400ea1640, 消息数=5
+2026-07-14 22:30:27 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=cf63b1b3-5f44-4034-8c47-69e4f3f63ffd, message='帮我看下最近30天每天营业额'
+2026-07-14 22:30:27 | Perception           | INFO     | [Perception] 原始输入: '帮我看下最近30天每天营业额' → 清洗后: '帮我看下最近30天每天营业额'
+2026-07-14 22:30:27 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '帮我看下最近30天每天营业额', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:30:27 | Memory               | INFO     | [Memory] 获取工作记忆: session=cf63b1b3-5f44-4034-8c47-69e4f3f63ffd, 消息数=0
+2026-07-14 22:30:27 | Memory               | INFO     | [Memory] 知识检索: query='帮我看下最近30天每天营业额', 结果数=3
+2026-07-14 22:30:27 | Memory               | INFO     | [Memory] 组装上下文: session=cf63b1b3-5f44-4034-8c47-69e4f3f63ffd, 总消息数=2
+2026-07-14 22:30:27 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=cf63b1b3-5f44-4034-8c47-69e4f3f63ffd, 消息数=2
+2026-07-14 22:30:27 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:30:28 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:30:38 | Memory               | INFO     | [Memory] 保存工作记忆: session=cf63b1b3-5f44-4034-8c47-69e4f3f63ffd, 消息数=5
+2026-07-14 22:30:39 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=175f9dd1-2557-486c-a965-31a72e8eef63, message='今天有多少待接单的订单'
+2026-07-14 22:30:39 | Perception           | INFO     | [Perception] 原始输入: '今天有多少待接单的订单' → 清洗后: '今天有多少待接单的订单'
+2026-07-14 22:30:39 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '今天有多少待接单的订单', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:30:39 | Memory               | INFO     | [Memory] 获取工作记忆: session=175f9dd1-2557-486c-a965-31a72e8eef63, 消息数=0
+2026-07-14 22:30:39 | Memory               | INFO     | [Memory] 知识检索: query='今天有多少待接单的订单', 结果数=3
+2026-07-14 22:30:39 | Memory               | INFO     | [Memory] 组装上下文: session=175f9dd1-2557-486c-a965-31a72e8eef63, 总消息数=2
+2026-07-14 22:30:39 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=175f9dd1-2557-486c-a965-31a72e8eef63, 消息数=2
+2026-07-14 22:30:39 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:30:41 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:30:42 | Memory               | INFO     | [Memory] 保存工作记忆: session=175f9dd1-2557-486c-a965-31a72e8eef63, 消息数=5
+2026-07-14 22:30:43 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=d41fd6fd-832c-4de5-905a-3bdfdfc2f7cd, message='现在有几个订单在配送中'
+2026-07-14 22:30:43 | Perception           | INFO     | [Perception] 原始输入: '现在有几个订单在配送中' → 清洗后: '现在有几个订单在配送中'
+2026-07-14 22:30:43 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '现在有几个订单在配送中', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:30:43 | Memory               | INFO     | [Memory] 获取工作记忆: session=d41fd6fd-832c-4de5-905a-3bdfdfc2f7cd, 消息数=0
+2026-07-14 22:30:44 | Memory               | INFO     | [Memory] 知识检索: query='现在有几个订单在配送中', 结果数=3
+2026-07-14 22:30:44 | Memory               | INFO     | [Memory] 组装上下文: session=d41fd6fd-832c-4de5-905a-3bdfdfc2f7cd, 总消息数=2
+2026-07-14 22:30:44 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=d41fd6fd-832c-4de5-905a-3bdfdfc2f7cd, 消息数=2
+2026-07-14 22:30:44 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:30:46 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:30:47 | Memory               | INFO     | [Memory] 保存工作记忆: session=d41fd6fd-832c-4de5-905a-3bdfdfc2f7cd, 消息数=5
+2026-07-14 22:30:49 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=6792e3f6-7537-423e-9c85-5f8d3aee8c15, message='今天完成了多少单'
+2026-07-14 22:30:49 | Perception           | INFO     | [Perception] 原始输入: '今天完成了多少单' → 清洗后: '今天完成了多少单'
+2026-07-14 22:30:49 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '今天完成了多少单', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:30:49 | Memory               | INFO     | [Memory] 获取工作记忆: session=6792e3f6-7537-423e-9c85-5f8d3aee8c15, 消息数=0
+2026-07-14 22:30:49 | Memory               | INFO     | [Memory] 知识检索: query='今天完成了多少单', 结果数=3
+2026-07-14 22:30:49 | Memory               | INFO     | [Memory] 组装上下文: session=6792e3f6-7537-423e-9c85-5f8d3aee8c15, 总消息数=2
+2026-07-14 22:30:49 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=6792e3f6-7537-423e-9c85-5f8d3aee8c15, 消息数=2
+2026-07-14 22:30:49 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:30:50 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:30:51 | Memory               | INFO     | [Memory] 保存工作记忆: session=6792e3f6-7537-423e-9c85-5f8d3aee8c15, 消息数=5
+2026-07-14 22:30:52 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=4504343c-a9a2-4fba-984c-46e483ffbce3, message='昨天取消了几单'
+2026-07-14 22:30:52 | Perception           | INFO     | [Perception] 原始输入: '昨天取消了几单' → 清洗后: '昨天取消了几单'
+2026-07-14 22:30:52 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '昨天取消了几单', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:30:52 | Memory               | INFO     | [Memory] 获取工作记忆: session=4504343c-a9a2-4fba-984c-46e483ffbce3, 消息数=0
+2026-07-14 22:30:52 | Memory               | INFO     | [Memory] 知识检索: query='昨天取消了几单', 结果数=3
+2026-07-14 22:30:52 | Memory               | INFO     | [Memory] 组装上下文: session=4504343c-a9a2-4fba-984c-46e483ffbce3, 总消息数=2
+2026-07-14 22:30:52 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=4504343c-a9a2-4fba-984c-46e483ffbce3, 消息数=2
+2026-07-14 22:30:52 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:30:55 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:30:56 | Memory               | INFO     | [Memory] 保存工作记忆: session=4504343c-a9a2-4fba-984c-46e483ffbce3, 消息数=5
+2026-07-14 22:30:57 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=0c0ee593-cb2e-458f-9b39-c772d80f4084, message='这周总共多少订单'
+2026-07-14 22:30:57 | Perception           | INFO     | [Perception] 原始输入: '这周总共多少订单' → 清洗后: '这周总共多少订单'
+2026-07-14 22:30:57 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '这周总共多少订单', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:30:57 | Memory               | INFO     | [Memory] 获取工作记忆: session=0c0ee593-cb2e-458f-9b39-c772d80f4084, 消息数=0
+2026-07-14 22:30:57 | Memory               | INFO     | [Memory] 知识检索: query='这周总共多少订单', 结果数=3
+2026-07-14 22:30:57 | Memory               | INFO     | [Memory] 组装上下文: session=0c0ee593-cb2e-458f-9b39-c772d80f4084, 总消息数=2
+2026-07-14 22:30:57 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=0c0ee593-cb2e-458f-9b39-c772d80f4084, 消息数=2
+2026-07-14 22:30:57 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:30:59 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:31:00 | Memory               | INFO     | [Memory] 保存工作记忆: session=0c0ee593-cb2e-458f-9b39-c772d80f4084, 消息数=5
+2026-07-14 22:31:02 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=72591e8b-1d31-444a-ad7d-1ac8a706f13b, message='退款的多不多'
+2026-07-14 22:31:02 | Perception           | INFO     | [Perception] 原始输入: '退款的多不多' → 清洗后: '退款的多不多'
+2026-07-14 22:31:02 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '退款的多不多', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:31:02 | Memory               | INFO     | [Memory] 获取工作记忆: session=72591e8b-1d31-444a-ad7d-1ac8a706f13b, 消息数=0
+2026-07-14 22:31:02 | Memory               | INFO     | [Memory] 知识检索: query='退款的多不多', 结果数=3
+2026-07-14 22:31:02 | Memory               | INFO     | [Memory] 组装上下文: session=72591e8b-1d31-444a-ad7d-1ac8a706f13b, 总消息数=2
+2026-07-14 22:31:02 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=72591e8b-1d31-444a-ad7d-1ac8a706f13b, 消息数=2
+2026-07-14 22:31:02 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:31:05 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:31:07 | Memory               | INFO     | [Memory] 保存工作记忆: session=72591e8b-1d31-444a-ad7d-1ac8a706f13b, 消息数=5
+2026-07-14 22:31:08 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=be534f01-a33c-4199-b22e-04e80b72715b, message='各状态的订单数量分别是多少'
+2026-07-14 22:31:08 | Perception           | INFO     | [Perception] 原始输入: '各状态的订单数量分别是多少' → 清洗后: '各状态的订单数量分别是多少'
+2026-07-14 22:31:08 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '各状态的订单数量分别是多少', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:31:08 | Memory               | INFO     | [Memory] 获取工作记忆: session=be534f01-a33c-4199-b22e-04e80b72715b, 消息数=0
+2026-07-14 22:31:09 | Memory               | INFO     | [Memory] 知识检索: query='各状态的订单数量分别是多少', 结果数=3
+2026-07-14 22:31:09 | Memory               | INFO     | [Memory] 组装上下文: session=be534f01-a33c-4199-b22e-04e80b72715b, 总消息数=2
+2026-07-14 22:31:09 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=be534f01-a33c-4199-b22e-04e80b72715b, 消息数=2
+2026-07-14 22:31:09 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:31:10 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:31:12 | Memory               | INFO     | [Memory] 保存工作记忆: session=be534f01-a33c-4199-b22e-04e80b72715b, 消息数=5
+2026-07-14 22:31:13 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=614c5ed6-4fae-4edf-8d58-58cea76f33c4, message='今天一共来了多少单'
+2026-07-14 22:31:13 | Perception           | INFO     | [Perception] 原始输入: '今天一共来了多少单' → 清洗后: '今天一共来了多少单'
+2026-07-14 22:31:13 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '今天一共来了多少单', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:31:13 | Memory               | INFO     | [Memory] 获取工作记忆: session=614c5ed6-4fae-4edf-8d58-58cea76f33c4, 消息数=0
+2026-07-14 22:31:13 | Memory               | INFO     | [Memory] 知识检索: query='今天一共来了多少单', 结果数=3
+2026-07-14 22:31:13 | Memory               | INFO     | [Memory] 组装上下文: session=614c5ed6-4fae-4edf-8d58-58cea76f33c4, 总消息数=2
+2026-07-14 22:31:13 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=614c5ed6-4fae-4edf-8d58-58cea76f33c4, 消息数=2
+2026-07-14 22:31:13 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:31:15 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:31:16 | Memory               | INFO     | [Memory] 保存工作记忆: session=614c5ed6-4fae-4edf-8d58-58cea76f33c4, 消息数=5
+2026-07-14 22:31:17 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=cd9d9096-9e08-4bf1-a221-cdc6d6bf1a01, message='有没有需要我处理的订单'
+2026-07-14 22:31:17 | Perception           | INFO     | [Perception] 原始输入: '有没有需要我处理的订单' → 清洗后: '有没有需要我处理的订单'
+2026-07-14 22:31:17 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '有没有需要我处理的订单', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:31:17 | Memory               | INFO     | [Memory] 获取工作记忆: session=cd9d9096-9e08-4bf1-a221-cdc6d6bf1a01, 消息数=0
+2026-07-14 22:31:17 | Memory               | INFO     | [Memory] 知识检索: query='有没有需要我处理的订单', 结果数=3
+2026-07-14 22:31:17 | Memory               | INFO     | [Memory] 组装上下文: session=cd9d9096-9e08-4bf1-a221-cdc6d6bf1a01, 总消息数=2
+2026-07-14 22:31:17 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=cd9d9096-9e08-4bf1-a221-cdc6d6bf1a01, 消息数=2
+2026-07-14 22:31:17 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:31:20 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:31:21 | Memory               | INFO     | [Memory] 保存工作记忆: session=cd9d9096-9e08-4bf1-a221-cdc6d6bf1a01, 消息数=5
+2026-07-14 22:31:22 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=e3d47ae1-3f72-4aa3-88ca-4a2760ee9525, message='上周的订单完成率怎么样'
+2026-07-14 22:31:22 | Perception           | INFO     | [Perception] 原始输入: '上周的订单完成率怎么样' → 清洗后: '上周的订单完成率怎么样'
+2026-07-14 22:31:22 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '上周的订单完成率怎么样', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:31:22 | Memory               | INFO     | [Memory] 获取工作记忆: session=e3d47ae1-3f72-4aa3-88ca-4a2760ee9525, 消息数=0
+2026-07-14 22:31:22 | Memory               | INFO     | [Memory] 知识检索: query='上周的订单完成率怎么样', 结果数=3
+2026-07-14 22:31:22 | Memory               | INFO     | [Memory] 组装上下文: session=e3d47ae1-3f72-4aa3-88ca-4a2760ee9525, 总消息数=2
+2026-07-14 22:31:22 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=e3d47ae1-3f72-4aa3-88ca-4a2760ee9525, 消息数=2
+2026-07-14 22:31:22 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:31:24 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:31:26 | Memory               | INFO     | [Memory] 保存工作记忆: session=e3d47ae1-3f72-4aa3-88ca-4a2760ee9525, 消息数=5
+2026-07-14 22:31:27 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=eb62ed6b-7972-49ca-930f-3d35821770a7, message='我们店有哪些菜品'
+2026-07-14 22:31:27 | Perception           | INFO     | [Perception] 原始输入: '我们店有哪些菜品' → 清洗后: '我们店有哪些菜品'
+2026-07-14 22:31:27 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '我们店有哪些菜品', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:31:27 | Memory               | INFO     | [Memory] 获取工作记忆: session=eb62ed6b-7972-49ca-930f-3d35821770a7, 消息数=0
+2026-07-14 22:31:27 | Memory               | INFO     | [Memory] 知识检索: query='我们店有哪些菜品', 结果数=3
+2026-07-14 22:31:27 | Memory               | INFO     | [Memory] 组装上下文: session=eb62ed6b-7972-49ca-930f-3d35821770a7, 总消息数=2
+2026-07-14 22:31:27 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=eb62ed6b-7972-49ca-930f-3d35821770a7, 消息数=2
+2026-07-14 22:31:27 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:31:28 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:31:34 | Memory               | INFO     | [Memory] 保存工作记忆: session=eb62ed6b-7972-49ca-930f-3d35821770a7, 消息数=5
+2026-07-14 22:31:35 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=04088bad-62d5-4a0b-8e03-0bd7806c134a, message='有没有叫宫保鸡丁的菜'
+2026-07-14 22:31:35 | Perception           | INFO     | [Perception] 原始输入: '有没有叫宫保鸡丁的菜' → 清洗后: '有没有叫宫保鸡丁的菜'
+2026-07-14 22:31:35 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '有没有叫宫保鸡丁的菜', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:31:35 | Memory               | INFO     | [Memory] 获取工作记忆: session=04088bad-62d5-4a0b-8e03-0bd7806c134a, 消息数=0
+2026-07-14 22:31:35 | Memory               | INFO     | [Memory] 知识检索: query='有没有叫宫保鸡丁的菜', 结果数=3
+2026-07-14 22:31:35 | Memory               | INFO     | [Memory] 组装上下文: session=04088bad-62d5-4a0b-8e03-0bd7806c134a, 总消息数=2
+2026-07-14 22:31:35 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=04088bad-62d5-4a0b-8e03-0bd7806c134a, 消息数=2
+2026-07-14 22:31:35 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:31:36 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:31:38 | Memory               | INFO     | [Memory] 保存工作记忆: session=04088bad-62d5-4a0b-8e03-0bd7806c134a, 消息数=5
+2026-07-14 22:31:39 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=9ce6c35e-1d69-4696-8319-a865576d525a, message='现在有多少菜在卖'
+2026-07-14 22:31:39 | Perception           | INFO     | [Perception] 原始输入: '现在有多少菜在卖' → 清洗后: '现在有多少菜在卖'
+2026-07-14 22:31:39 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '现在有多少菜在卖', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:31:39 | Memory               | INFO     | [Memory] 获取工作记忆: session=9ce6c35e-1d69-4696-8319-a865576d525a, 消息数=0
+2026-07-14 22:31:39 | Memory               | INFO     | [Memory] 知识检索: query='现在有多少菜在卖', 结果数=3
+2026-07-14 22:31:39 | Memory               | INFO     | [Memory] 组装上下文: session=9ce6c35e-1d69-4696-8319-a865576d525a, 总消息数=2
+2026-07-14 22:31:39 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=9ce6c35e-1d69-4696-8319-a865576d525a, 消息数=2
+2026-07-14 22:31:39 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:31:41 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:31:48 | Memory               | INFO     | [Memory] 保存工作记忆: session=9ce6c35e-1d69-4696-8319-a865576d525a, 消息数=5
+2026-07-14 22:31:50 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=a7855934-4726-42a5-a34e-d30db0a5b533, message='有哪些菜停售了'
+2026-07-14 22:31:50 | Perception           | INFO     | [Perception] 原始输入: '有哪些菜停售了' → 清洗后: '有哪些菜停售了'
+2026-07-14 22:31:50 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '有哪些菜停售了', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:31:50 | Memory               | INFO     | [Memory] 获取工作记忆: session=a7855934-4726-42a5-a34e-d30db0a5b533, 消息数=0
+2026-07-14 22:31:50 | Memory               | INFO     | [Memory] 知识检索: query='有哪些菜停售了', 结果数=3
+2026-07-14 22:31:50 | Memory               | INFO     | [Memory] 组装上下文: session=a7855934-4726-42a5-a34e-d30db0a5b533, 总消息数=2
+2026-07-14 22:31:50 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=a7855934-4726-42a5-a34e-d30db0a5b533, 消息数=2
+2026-07-14 22:31:50 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:31:50 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:31:54 | Memory               | INFO     | [Memory] 保存工作记忆: session=a7855934-4726-42a5-a34e-d30db0a5b533, 消息数=5
+2026-07-14 22:31:55 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=6466f424-e146-45de-8c94-5981b149f18b, message='菜品分类有哪些'
+2026-07-14 22:31:55 | Perception           | INFO     | [Perception] 原始输入: '菜品分类有哪些' → 清洗后: '菜品分类有哪些'
+2026-07-14 22:31:55 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '菜品分类有哪些', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:31:55 | Memory               | INFO     | [Memory] 获取工作记忆: session=6466f424-e146-45de-8c94-5981b149f18b, 消息数=0
+2026-07-14 22:31:55 | Memory               | INFO     | [Memory] 知识检索: query='菜品分类有哪些', 结果数=3
+2026-07-14 22:31:55 | Memory               | INFO     | [Memory] 组装上下文: session=6466f424-e146-45de-8c94-5981b149f18b, 总消息数=2
+2026-07-14 22:31:55 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=6466f424-e146-45de-8c94-5981b149f18b, 消息数=2
+2026-07-14 22:31:55 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:31:57 | Memory               | INFO     | [Memory] 保存工作记忆: session=6466f424-e146-45de-8c94-5981b149f18b, 消息数=3
+2026-07-14 22:31:58 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=b3a8e947-1e3a-41a0-b313-df18d7a680fe, message='最贵的菜是什么'
+2026-07-14 22:31:58 | Perception           | INFO     | [Perception] 原始输入: '最贵的菜是什么' → 清洗后: '最贵的菜是什么'
+2026-07-14 22:31:58 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '最贵的菜是什么', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:31:58 | Memory               | INFO     | [Memory] 获取工作记忆: session=b3a8e947-1e3a-41a0-b313-df18d7a680fe, 消息数=0
+2026-07-14 22:31:58 | Memory               | INFO     | [Memory] 知识检索: query='最贵的菜是什么', 结果数=3
+2026-07-14 22:31:58 | Memory               | INFO     | [Memory] 组装上下文: session=b3a8e947-1e3a-41a0-b313-df18d7a680fe, 总消息数=2
+2026-07-14 22:31:58 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=b3a8e947-1e3a-41a0-b313-df18d7a680fe, 消息数=2
+2026-07-14 22:31:58 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:31:59 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:32:00 | Memory               | INFO     | [Memory] 保存工作记忆: session=b3a8e947-1e3a-41a0-b313-df18d7a680fe, 消息数=5
+2026-07-14 22:32:01 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=f85bf6df-2a05-4fae-a824-d7880e89cb27, message='帮我搜一下带'鸡'字的菜'
+2026-07-14 22:32:01 | Perception           | INFO     | [Perception] 原始输入: '帮我搜一下带'鸡'字的菜' → 清洗后: '帮我搜一下带'鸡'字的菜'
+2026-07-14 22:32:01 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '帮我搜一下带'鸡'字的菜', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:32:01 | Memory               | INFO     | [Memory] 获取工作记忆: session=f85bf6df-2a05-4fae-a824-d7880e89cb27, 消息数=0
+2026-07-14 22:32:02 | Memory               | INFO     | [Memory] 知识检索: query='帮我搜一下带'鸡'字的菜', 结果数=3
+2026-07-14 22:32:02 | Memory               | INFO     | [Memory] 组装上下文: session=f85bf6df-2a05-4fae-a824-d7880e89cb27, 总消息数=2
+2026-07-14 22:32:02 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=f85bf6df-2a05-4fae-a824-d7880e89cb27, 消息数=2
+2026-07-14 22:32:02 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:32:03 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:32:04 | Memory               | INFO     | [Memory] 保存工作记忆: session=f85bf6df-2a05-4fae-a824-d7880e89cb27, 消息数=5
+2026-07-14 22:32:05 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=88ee332b-7726-477e-92b0-6ce69a763844, message='素菜类的菜品有哪些'
+2026-07-14 22:32:05 | Perception           | INFO     | [Perception] 原始输入: '素菜类的菜品有哪些' → 清洗后: '素菜类的菜品有哪些'
+2026-07-14 22:32:05 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '素菜类的菜品有哪些', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:32:05 | Memory               | INFO     | [Memory] 获取工作记忆: session=88ee332b-7726-477e-92b0-6ce69a763844, 消息数=0
+2026-07-14 22:32:06 | Memory               | INFO     | [Memory] 知识检索: query='素菜类的菜品有哪些', 结果数=3
+2026-07-14 22:32:06 | Memory               | INFO     | [Memory] 组装上下文: session=88ee332b-7726-477e-92b0-6ce69a763844, 总消息数=2
+2026-07-14 22:32:06 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=88ee332b-7726-477e-92b0-6ce69a763844, 消息数=2
+2026-07-14 22:32:06 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:32:07 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:32:09 | Memory               | INFO     | [Memory] 保存工作记忆: session=88ee332b-7726-477e-92b0-6ce69a763844, 消息数=5
+2026-07-14 22:32:10 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=38847944-2799-4f13-8aa7-9417b8256a12, message='价格在20元以下的菜有哪些'
+2026-07-14 22:32:10 | Perception           | INFO     | [Perception] 原始输入: '价格在20元以下的菜有哪些' → 清洗后: '价格在20元以下的菜有哪些'
+2026-07-14 22:32:10 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '价格在20元以下的菜有哪些', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:32:10 | Memory               | INFO     | [Memory] 获取工作记忆: session=38847944-2799-4f13-8aa7-9417b8256a12, 消息数=0
+2026-07-14 22:32:10 | Memory               | INFO     | [Memory] 知识检索: query='价格在20元以下的菜有哪些', 结果数=3
+2026-07-14 22:32:10 | Memory               | INFO     | [Memory] 组装上下文: session=38847944-2799-4f13-8aa7-9417b8256a12, 总消息数=2
+2026-07-14 22:32:10 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=38847944-2799-4f13-8aa7-9417b8256a12, 消息数=2
+2026-07-14 22:32:10 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:32:11 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:32:14 | Memory               | INFO     | [Memory] 保存工作记忆: session=38847944-2799-4f13-8aa7-9417b8256a12, 消息数=5
+2026-07-14 22:32:15 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=f92e1fd7-9e74-4810-8733-d401aae47b7b, message='现在总共有多少道菜'
+2026-07-14 22:32:15 | Perception           | INFO     | [Perception] 原始输入: '现在总共有多少道菜' → 清洗后: '现在总共有多少道菜'
+2026-07-14 22:32:15 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '现在总共有多少道菜', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:32:15 | Memory               | INFO     | [Memory] 获取工作记忆: session=f92e1fd7-9e74-4810-8733-d401aae47b7b, 消息数=0
+2026-07-14 22:32:15 | Memory               | INFO     | [Memory] 知识检索: query='现在总共有多少道菜', 结果数=3
+2026-07-14 22:32:15 | Memory               | INFO     | [Memory] 组装上下文: session=f92e1fd7-9e74-4810-8733-d401aae47b7b, 总消息数=2
+2026-07-14 22:32:15 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=f92e1fd7-9e74-4810-8733-d401aae47b7b, 消息数=2
+2026-07-14 22:32:15 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:32:16 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:32:22 | Memory               | INFO     | [Memory] 保存工作记忆: session=f92e1fd7-9e74-4810-8733-d401aae47b7b, 消息数=5
+2026-07-14 22:32:23 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=ab16b16f-0a5f-4e32-9449-a7efa8f7f449, message='帮我接一下最新的待接单订单'
+2026-07-14 22:32:23 | Perception           | INFO     | [Perception] 原始输入: '帮我接一下最新的待接单订单' → 清洗后: '帮我接一下最新的待接单订单'
+2026-07-14 22:32:23 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '帮我接一下最新的待接单订单', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:32:23 | Memory               | INFO     | [Memory] 获取工作记忆: session=ab16b16f-0a5f-4e32-9449-a7efa8f7f449, 消息数=0
+2026-07-14 22:32:24 | Memory               | INFO     | [Memory] 知识检索: query='帮我接一下最新的待接单订单', 结果数=3
+2026-07-14 22:32:24 | Memory               | INFO     | [Memory] 组装上下文: session=ab16b16f-0a5f-4e32-9449-a7efa8f7f449, 总消息数=2
+2026-07-14 22:32:24 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=ab16b16f-0a5f-4e32-9449-a7efa8f7f449, 消息数=2
+2026-07-14 22:32:24 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:32:25 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:32:27 | Memory               | INFO     | [Memory] 保存工作记忆: session=ab16b16f-0a5f-4e32-9449-a7efa8f7f449, 消息数=5
+2026-07-14 22:32:28 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=0fff6f3c-4799-41f1-89b3-97afcc93f059, message='把宫保鸡丁停售'
+2026-07-14 22:32:28 | Perception           | INFO     | [Perception] 原始输入: '把宫保鸡丁停售' → 清洗后: '把宫保鸡丁停售'
+2026-07-14 22:32:28 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '把宫保鸡丁停售', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:32:28 | Memory               | INFO     | [Memory] 获取工作记忆: session=0fff6f3c-4799-41f1-89b3-97afcc93f059, 消息数=0
+2026-07-14 22:32:28 | Memory               | INFO     | [Memory] 知识检索: query='把宫保鸡丁停售', 结果数=3
+2026-07-14 22:32:28 | Memory               | INFO     | [Memory] 组装上下文: session=0fff6f3c-4799-41f1-89b3-97afcc93f059, 总消息数=2
+2026-07-14 22:32:28 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=0fff6f3c-4799-41f1-89b3-97afcc93f059, 消息数=2
+2026-07-14 22:32:28 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:32:29 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:32:31 | Memory               | INFO     | [Memory] 保存工作记忆: session=0fff6f3c-4799-41f1-89b3-97afcc93f059, 消息数=5
+2026-07-14 22:32:32 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=69d12deb-b9da-40b5-bedc-b7ccac06fdc5, message='123号订单我不想接，帮我拒了'
+2026-07-14 22:32:32 | Perception           | INFO     | [Perception] 原始输入: '123号订单我不想接，帮我拒了' → 清洗后: '123号订单我不想接，帮我拒了'
+2026-07-14 22:32:32 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '123号订单我不想接，帮我拒了', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:32:32 | Memory               | INFO     | [Memory] 获取工作记忆: session=69d12deb-b9da-40b5-bedc-b7ccac06fdc5, 消息数=0
+2026-07-14 22:32:32 | Memory               | INFO     | [Memory] 知识检索: query='123号订单我不想接，帮我拒了', 结果数=3
+2026-07-14 22:32:32 | Memory               | INFO     | [Memory] 组装上下文: session=69d12deb-b9da-40b5-bedc-b7ccac06fdc5, 总消息数=2
+2026-07-14 22:32:32 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=69d12deb-b9da-40b5-bedc-b7ccac06fdc5, 消息数=2
+2026-07-14 22:32:32 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:32:33 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:32:35 | Memory               | INFO     | [Memory] 保存工作记忆: session=69d12deb-b9da-40b5-bedc-b7ccac06fdc5, 消息数=5
+2026-07-14 22:32:36 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=67a553d3-4c21-4e1a-9f3f-044793f3a11d, message='把之前停售的菜重新上架'
+2026-07-14 22:32:36 | Perception           | INFO     | [Perception] 原始输入: '把之前停售的菜重新上架' → 清洗后: '把之前停售的菜重新上架'
+2026-07-14 22:32:36 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '把之前停售的菜重新上架', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:32:36 | Memory               | INFO     | [Memory] 获取工作记忆: session=67a553d3-4c21-4e1a-9f3f-044793f3a11d, 消息数=0
+2026-07-14 22:32:36 | Memory               | INFO     | [Memory] 知识检索: query='把之前停售的菜重新上架', 结果数=3
+2026-07-14 22:32:36 | Memory               | INFO     | [Memory] 组装上下文: session=67a553d3-4c21-4e1a-9f3f-044793f3a11d, 总消息数=2
+2026-07-14 22:32:36 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=67a553d3-4c21-4e1a-9f3f-044793f3a11d, 消息数=2
+2026-07-14 22:32:36 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:32:37 | Memory               | INFO     | [Memory] 保存工作记忆: session=67a553d3-4c21-4e1a-9f3f-044793f3a11d, 消息数=3
+2026-07-14 22:32:39 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=88537ccf-0d30-4d2e-8e21-62feae869bf1, message='帮我接所有待接单订单'
+2026-07-14 22:32:39 | Perception           | INFO     | [Perception] 原始输入: '帮我接所有待接单订单' → 清洗后: '帮我接所有待接单订单'
+2026-07-14 22:32:39 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '帮我接所有待接单订单', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:32:39 | Memory               | INFO     | [Memory] 获取工作记忆: session=88537ccf-0d30-4d2e-8e21-62feae869bf1, 消息数=0
+2026-07-14 22:32:39 | Memory               | INFO     | [Memory] 知识检索: query='帮我接所有待接单订单', 结果数=3
+2026-07-14 22:32:39 | Memory               | INFO     | [Memory] 组装上下文: session=88537ccf-0d30-4d2e-8e21-62feae869bf1, 总消息数=2
+2026-07-14 22:32:39 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=88537ccf-0d30-4d2e-8e21-62feae869bf1, 消息数=2
+2026-07-14 22:32:39 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:32:42 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:32:43 | Memory               | INFO     | [Memory] 保存工作记忆: session=88537ccf-0d30-4d2e-8e21-62feae869bf1, 消息数=5
+2026-07-14 22:32:44 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=4b2a762f-6176-4ff5-b955-16ced29f8784, message='把最贵的菜停售'
+2026-07-14 22:32:44 | Perception           | INFO     | [Perception] 原始输入: '把最贵的菜停售' → 清洗后: '把最贵的菜停售'
+2026-07-14 22:32:44 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '把最贵的菜停售', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:32:44 | Memory               | INFO     | [Memory] 获取工作记忆: session=4b2a762f-6176-4ff5-b955-16ced29f8784, 消息数=0
+2026-07-14 22:32:44 | Memory               | INFO     | [Memory] 知识检索: query='把最贵的菜停售', 结果数=3
+2026-07-14 22:32:44 | Memory               | INFO     | [Memory] 组装上下文: session=4b2a762f-6176-4ff5-b955-16ced29f8784, 总消息数=2
+2026-07-14 22:32:44 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=4b2a762f-6176-4ff5-b955-16ced29f8784, 消息数=2
+2026-07-14 22:32:44 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:32:46 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:32:48 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 7
+2026-07-14 22:32:50 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 9
+2026-07-14 22:32:52 | Memory               | INFO     | [Memory] 保存工作记忆: session=4b2a762f-6176-4ff5-b955-16ced29f8784, 消息数=9
+2026-07-14 22:32:53 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=49005fe6-f6a5-4186-a18e-f010732fb90d, message='拒绝所有今天的新订单'
+2026-07-14 22:32:53 | Perception           | INFO     | [Perception] 原始输入: '拒绝所有今天的新订单' → 清洗后: '拒绝所有今天的新订单'
+2026-07-14 22:32:53 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '拒绝所有今天的新订单', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:32:53 | Memory               | INFO     | [Memory] 获取工作记忆: session=49005fe6-f6a5-4186-a18e-f010732fb90d, 消息数=0
+2026-07-14 22:32:53 | Memory               | INFO     | [Memory] 知识检索: query='拒绝所有今天的新订单', 结果数=3
+2026-07-14 22:32:53 | Memory               | INFO     | [Memory] 组装上下文: session=49005fe6-f6a5-4186-a18e-f010732fb90d, 总消息数=2
+2026-07-14 22:32:53 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=49005fe6-f6a5-4186-a18e-f010732fb90d, 消息数=2
+2026-07-14 22:32:53 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:32:55 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:32:56 | Memory               | INFO     | [Memory] 保存工作记忆: session=49005fe6-f6a5-4186-a18e-f010732fb90d, 消息数=5
+2026-07-14 22:32:57 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=60ba74f8-1b60-4c83-b7db-4c434318ee41, message='帮我删掉所有菜品'
+2026-07-14 22:32:57 | Perception           | INFO     | [Perception] 原始输入: '帮我删掉所有菜品' → 清洗后: '帮我删掉所有菜品'
+2026-07-14 22:32:57 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '帮我删掉所有菜品', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:32:57 | Memory               | INFO     | [Memory] 获取工作记忆: session=60ba74f8-1b60-4c83-b7db-4c434318ee41, 消息数=0
+2026-07-14 22:32:57 | Memory               | INFO     | [Memory] 知识检索: query='帮我删掉所有菜品', 结果数=3
+2026-07-14 22:32:57 | Memory               | INFO     | [Memory] 组装上下文: session=60ba74f8-1b60-4c83-b7db-4c434318ee41, 总消息数=2
+2026-07-14 22:32:57 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=60ba74f8-1b60-4c83-b7db-4c434318ee41, 消息数=2
+2026-07-14 22:32:57 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:00 | Memory               | INFO     | [Memory] 保存工作记忆: session=60ba74f8-1b60-4c83-b7db-4c434318ee41, 消息数=3
+2026-07-14 22:33:01 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=5b057fef-52b7-4951-a036-5ed6caee5a96, message='起售烤鱼这道菜'
+2026-07-14 22:33:01 | Perception           | INFO     | [Perception] 原始输入: '起售烤鱼这道菜' → 清洗后: '起售烤鱼这道菜'
+2026-07-14 22:33:01 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '起售烤鱼这道菜', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:33:01 | Memory               | INFO     | [Memory] 获取工作记忆: session=5b057fef-52b7-4951-a036-5ed6caee5a96, 消息数=0
+2026-07-14 22:33:02 | Memory               | INFO     | [Memory] 知识检索: query='起售烤鱼这道菜', 结果数=3
+2026-07-14 22:33:02 | Memory               | INFO     | [Memory] 组装上下文: session=5b057fef-52b7-4951-a036-5ed6caee5a96, 总消息数=2
+2026-07-14 22:33:02 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=5b057fef-52b7-4951-a036-5ed6caee5a96, 消息数=2
+2026-07-14 22:33:02 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:04 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 5
+2026-07-14 22:33:06 | Memory               | INFO     | [Memory] 保存工作记忆: session=5b057fef-52b7-4951-a036-5ed6caee5a96, 消息数=5
+2026-07-14 22:33:07 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=4a61e555-a27a-423b-acbf-35fc247d8420, message='接单'
+2026-07-14 22:33:07 | Perception           | INFO     | [Perception] 原始输入: '接单' → 清洗后: '接单'
+2026-07-14 22:33:07 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '接单', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:33:07 | Memory               | INFO     | [Memory] 获取工作记忆: session=4a61e555-a27a-423b-acbf-35fc247d8420, 消息数=0
+2026-07-14 22:33:08 | Memory               | INFO     | [Memory] 知识检索: query='接单', 结果数=3
+2026-07-14 22:33:08 | Memory               | INFO     | [Memory] 组装上下文: session=4a61e555-a27a-423b-acbf-35fc247d8420, 总消息数=2
+2026-07-14 22:33:08 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=4a61e555-a27a-423b-acbf-35fc247d8420, 消息数=2
+2026-07-14 22:33:08 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:09 | Memory               | INFO     | [Memory] 保存工作记忆: session=4a61e555-a27a-423b-acbf-35fc247d8420, 消息数=3
+2026-07-14 22:33:10 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=fe83a554-7751-4cbc-9a4f-8b525715adb6, message='你好'
+2026-07-14 22:33:10 | Perception           | INFO     | [Perception] 原始输入: '你好' → 清洗后: '你好'
+2026-07-14 22:33:10 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '你好', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:33:10 | Memory               | INFO     | [Memory] 获取工作记忆: session=fe83a554-7751-4cbc-9a4f-8b525715adb6, 消息数=0
+2026-07-14 22:33:10 | Memory               | INFO     | [Memory] 知识检索: query='你好', 结果数=3
+2026-07-14 22:33:10 | Memory               | INFO     | [Memory] 组装上下文: session=fe83a554-7751-4cbc-9a4f-8b525715adb6, 总消息数=2
+2026-07-14 22:33:10 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=fe83a554-7751-4cbc-9a4f-8b525715adb6, 消息数=2
+2026-07-14 22:33:10 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:11 | Memory               | INFO     | [Memory] 保存工作记忆: session=fe83a554-7751-4cbc-9a4f-8b525715adb6, 消息数=3
+2026-07-14 22:33:12 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=cb9164e6-5753-4f51-8f8a-620c2b898469, message='你觉得外卖行业前景怎么样'
+2026-07-14 22:33:12 | Perception           | INFO     | [Perception] 原始输入: '你觉得外卖行业前景怎么样' → 清洗后: '你觉得外卖行业前景怎么样'
+2026-07-14 22:33:12 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '你觉得外卖行业前景怎么样', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:33:12 | Memory               | INFO     | [Memory] 获取工作记忆: session=cb9164e6-5753-4f51-8f8a-620c2b898469, 消息数=0
+2026-07-14 22:33:12 | Memory               | INFO     | [Memory] 知识检索: query='你觉得外卖行业前景怎么样', 结果数=3
+2026-07-14 22:33:12 | Memory               | INFO     | [Memory] 组装上下文: session=cb9164e6-5753-4f51-8f8a-620c2b898469, 总消息数=2
+2026-07-14 22:33:12 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=cb9164e6-5753-4f51-8f8a-620c2b898469, 消息数=2
+2026-07-14 22:33:12 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:16 | Memory               | INFO     | [Memory] 保存工作记忆: session=cb9164e6-5753-4f51-8f8a-620c2b898469, 消息数=3
+2026-07-14 22:33:17 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=075c56bb-8126-4bd1-98dc-b05e6a796177, message='帮我写一篇营销文案'
+2026-07-14 22:33:17 | Perception           | INFO     | [Perception] 原始输入: '帮我写一篇营销文案' → 清洗后: '帮我写一篇营销文案'
+2026-07-14 22:33:17 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '帮我写一篇营销文案', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:33:17 | Memory               | INFO     | [Memory] 获取工作记忆: session=075c56bb-8126-4bd1-98dc-b05e6a796177, 消息数=0
+2026-07-14 22:33:17 | Memory               | INFO     | [Memory] 知识检索: query='帮我写一篇营销文案', 结果数=3
+2026-07-14 22:33:17 | Memory               | INFO     | [Memory] 组装上下文: session=075c56bb-8126-4bd1-98dc-b05e6a796177, 总消息数=2
+2026-07-14 22:33:17 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=075c56bb-8126-4bd1-98dc-b05e6a796177, 消息数=2
+2026-07-14 22:33:17 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:19 | Memory               | INFO     | [Memory] 保存工作记忆: session=075c56bb-8126-4bd1-98dc-b05e6a796177, 消息数=3
+2026-07-14 22:33:20 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=60bbf5ce-ba11-4ab9-a1c0-a48c9fc75c78, message='今天天气怎么样'
+2026-07-14 22:33:20 | Perception           | INFO     | [Perception] 原始输入: '今天天气怎么样' → 清洗后: '今天天气怎么样'
+2026-07-14 22:33:20 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '今天天气怎么样', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:33:20 | Memory               | INFO     | [Memory] 获取工作记忆: session=60bbf5ce-ba11-4ab9-a1c0-a48c9fc75c78, 消息数=0
+2026-07-14 22:33:21 | Memory               | INFO     | [Memory] 知识检索: query='今天天气怎么样', 结果数=3
+2026-07-14 22:33:21 | Memory               | INFO     | [Memory] 组装上下文: session=60bbf5ce-ba11-4ab9-a1c0-a48c9fc75c78, 总消息数=2
+2026-07-14 22:33:21 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=60bbf5ce-ba11-4ab9-a1c0-a48c9fc75c78, 消息数=2
+2026-07-14 22:33:21 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:22 | Memory               | INFO     | [Memory] 保存工作记忆: session=60bbf5ce-ba11-4ab9-a1c0-a48c9fc75c78, 消息数=3
+2026-07-14 22:33:23 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=249a24da-bee2-4b04-bd7e-daa02144f53b, message='谢谢你的帮助'
+2026-07-14 22:33:23 | Perception           | INFO     | [Perception] 原始输入: '谢谢你的帮助' → 清洗后: '谢谢你的帮助'
+2026-07-14 22:33:23 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '谢谢你的帮助', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:33:23 | Memory               | INFO     | [Memory] 获取工作记忆: session=249a24da-bee2-4b04-bd7e-daa02144f53b, 消息数=0
+2026-07-14 22:33:23 | Memory               | INFO     | [Memory] 知识检索: query='谢谢你的帮助', 结果数=3
+2026-07-14 22:33:23 | Memory               | INFO     | [Memory] 组装上下文: session=249a24da-bee2-4b04-bd7e-daa02144f53b, 总消息数=2
+2026-07-14 22:33:23 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=249a24da-bee2-4b04-bd7e-daa02144f53b, 消息数=2
+2026-07-14 22:33:23 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:24 | Memory               | INFO     | [Memory] 保存工作记忆: session=249a24da-bee2-4b04-bd7e-daa02144f53b, 消息数=3
+2026-07-14 22:33:25 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=1ba54a95-de02-4904-9367-61328ed71136, message='你怎么这么笨'
+2026-07-14 22:33:25 | Perception           | INFO     | [Perception] 原始输入: '你怎么这么笨' → 清洗后: '你怎么这么笨'
+2026-07-14 22:33:25 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '你怎么这么笨', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:33:25 | Memory               | INFO     | [Memory] 获取工作记忆: session=1ba54a95-de02-4904-9367-61328ed71136, 消息数=0
+2026-07-14 22:33:25 | Memory               | INFO     | [Memory] 知识检索: query='你怎么这么笨', 结果数=3
+2026-07-14 22:33:25 | Memory               | INFO     | [Memory] 组装上下文: session=1ba54a95-de02-4904-9367-61328ed71136, 总消息数=2
+2026-07-14 22:33:25 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=1ba54a95-de02-4904-9367-61328ed71136, 消息数=2
+2026-07-14 22:33:25 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:27 | Memory               | INFO     | [Memory] 保存工作记忆: session=1ba54a95-de02-4904-9367-61328ed71136, 消息数=3
+2026-07-14 22:33:28 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=8013f1d9-2a69-4678-a2a3-3ce02d3ada58, message='帮我查一下隔壁老王烧烤店的营业额'
+2026-07-14 22:33:28 | Perception           | INFO     | [Perception] 原始输入: '帮我查一下隔壁老王烧烤店的营业额' → 清洗后: '帮我查一下隔壁老王烧烤店的营业额'
+2026-07-14 22:33:28 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '帮我查一下隔壁老王烧烤店的营业额', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:33:28 | Memory               | INFO     | [Memory] 获取工作记忆: session=8013f1d9-2a69-4678-a2a3-3ce02d3ada58, 消息数=0
+2026-07-14 22:33:28 | Memory               | INFO     | [Memory] 知识检索: query='帮我查一下隔壁老王烧烤店的营业额', 结果数=3
+2026-07-14 22:33:28 | Memory               | INFO     | [Memory] 组装上下文: session=8013f1d9-2a69-4678-a2a3-3ce02d3ada58, 总消息数=2
+2026-07-14 22:33:28 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=8013f1d9-2a69-4678-a2a3-3ce02d3ada58, 消息数=2
+2026-07-14 22:33:28 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:31 | Memory               | INFO     | [Memory] 保存工作记忆: session=8013f1d9-2a69-4678-a2a3-3ce02d3ada58, 消息数=3
+2026-07-14 22:33:32 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=8f5a57a8-f4f4-4724-ba43-afdc3412ac5a, message='今年双11搞什么活动好'
+2026-07-14 22:33:32 | Perception           | INFO     | [Perception] 原始输入: '今年双11搞什么活动好' → 清洗后: '今年双11搞什么活动好'
+2026-07-14 22:33:32 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '今年双11搞什么活动好', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:33:32 | Memory               | INFO     | [Memory] 获取工作记忆: session=8f5a57a8-f4f4-4724-ba43-afdc3412ac5a, 消息数=0
+2026-07-14 22:33:32 | Memory               | INFO     | [Memory] 知识检索: query='今年双11搞什么活动好', 结果数=3
+2026-07-14 22:33:32 | Memory               | INFO     | [Memory] 组装上下文: session=8f5a57a8-f4f4-4724-ba43-afdc3412ac5a, 总消息数=2
+2026-07-14 22:33:32 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=8f5a57a8-f4f4-4724-ba43-afdc3412ac5a, 消息数=2
+2026-07-14 22:33:32 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:42 | Memory               | INFO     | [Memory] 保存工作记忆: session=8f5a57a8-f4f4-4724-ba43-afdc3412ac5a, 消息数=3
+2026-07-14 22:33:43 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=cb120fca-ec6f-4864-9ed1-d4ce456e6141, message='能不能帮我算一下如果打8折能赚多少'
+2026-07-14 22:33:43 | Perception           | INFO     | [Perception] 原始输入: '能不能帮我算一下如果打8折能赚多少' → 清洗后: '能不能帮我算一下如果打8折能赚多少'
+2026-07-14 22:33:43 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '能不能帮我算一下如果打8折能赚多少', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:33:43 | Memory               | INFO     | [Memory] 获取工作记忆: session=cb120fca-ec6f-4864-9ed1-d4ce456e6141, 消息数=0
+2026-07-14 22:33:44 | Memory               | INFO     | [Memory] 知识检索: query='能不能帮我算一下如果打8折能赚多少', 结果数=3
+2026-07-14 22:33:44 | Memory               | INFO     | [Memory] 组装上下文: session=cb120fca-ec6f-4864-9ed1-d4ce456e6141, 总消息数=2
+2026-07-14 22:33:44 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=cb120fca-ec6f-4864-9ed1-d4ce456e6141, 消息数=2
+2026-07-14 22:33:44 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:46 | Memory               | INFO     | [Memory] 保存工作记忆: session=cb120fca-ec6f-4864-9ed1-d4ce456e6141, 消息数=3
+2026-07-14 22:33:47 | agent.chat_agent     | INFO     | [Chat] 非流式对话: session=8fdc2add-4ffd-4f47-a9f2-851119d48014, message='你是谁开发的'
+2026-07-14 22:33:47 | Perception           | INFO     | [Perception] 原始输入: '你是谁开发的' → 清洗后: '你是谁开发的'
+2026-07-14 22:33:47 | agent.chat_agent     | INFO     | [Perceive] 用户输入: '你是谁开发的', 意图: {'intent': 'unknown', 'confidence': 0.0, 'method': 'llm_fallback'}
+2026-07-14 22:33:47 | Memory               | INFO     | [Memory] 获取工作记忆: session=8fdc2add-4ffd-4f47-a9f2-851119d48014, 消息数=0
+2026-07-14 22:33:47 | Memory               | INFO     | [Memory] 知识检索: query='你是谁开发的', 结果数=3
+2026-07-14 22:33:47 | Memory               | INFO     | [Memory] 组装上下文: session=8fdc2add-4ffd-4f47-a9f2-851119d48014, 总消息数=2
+2026-07-14 22:33:47 | agent.chat_agent     | INFO     | [Memorize] 组装上下文: session=8fdc2add-4ffd-4f47-a9f2-851119d48014, 消息数=2
+2026-07-14 22:33:47 | agent.chat_agent     | INFO     | [CallLLM] 调用 LLM, 消息数: 3
+2026-07-14 22:33:49 | Reflection           | WARNING  | [Reflection] 身份校验触发: 关键词 '阿里云' 的句子被替换
+2026-07-14 22:33:49 | Reflection           | INFO     | [Reflection] 身份清洗完成
+2026-07-14 22:33:49 | agent.chat_agent     | INFO     | [Reflect] 输出被修改
+2026-07-14 22:33:49 | Memory               | INFO     | [Memory] 保存工作记忆: session=8fdc2add-4ffd-4f47-a9f2-851119d48014, 消息数=4
