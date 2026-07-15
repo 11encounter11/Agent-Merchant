@@ -183,10 +183,17 @@ class KnowledgeBase:
                 except Exception as e:
                     self.logger.error(f"[KnowledgeBase] 加载 {file_path} 失败: {e}")
         
-        # 批量存入 chromadb（向量化 + 存储）
+        # 分批存入 chromadb（向量化 + 存储）
+        # DashScope text-embedding-v3 单次 batch 上限为 10
         if documents:
-            self.collection.add(documents=documents, ids=ids)
-            self.logger.info(f"[KnowledgeBase] 成功加载 {len(documents)} 条知识（向量库）")
+            batch_size = 10
+            for start in range(0, len(documents), batch_size):
+                end = start + batch_size
+                self.collection.add(
+                    documents=documents[start:end],
+                    ids=ids[start:end],
+                )
+            self.logger.info(f"[KnowledgeBase] 成功加载 {len(documents)} 条知识（向量库，每批≤{batch_size}）")
         else:
             self.logger.info("[KnowledgeBase] 没有找到知识文档")
         

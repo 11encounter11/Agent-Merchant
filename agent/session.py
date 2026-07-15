@@ -29,7 +29,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, ToolMessage
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +50,35 @@ def _session_file(session_id: str) -> Path:
     return SESSION_DIR / f"{session_id}.json"
 
 
+def filter_messages_for_storage(messages: List[BaseMessage]) -> List[BaseMessage]:
+    """
+    只保留可回放的多轮对话消息。
+
+    为什么要过滤：
+    - ToolMessage / 带 tool_calls 的 AIMessage 一旦落盘再加载，
+      tool_calls 会丢失，下一轮调用 LLM 会报：
+      messages with role "tool" must be a response to a preceding message with "tool_calls"
+    - RAG 注入的「[参考信息]」也不应写入会话历史
+    """
+    cleaned: List[BaseMessage] = []
+    for msg in messages:
+        if isinstance(msg, ToolMessage):
+            continue
+        if isinstance(msg, AIMessage):
+            if getattr(msg, "tool_calls", None):
+                continue
+            if not msg.content:
+                continue
+            cleaned.append(AIMessage(content=msg.content))
+            continue
+        if isinstance(msg, HumanMessage):
+            content = msg.content or ""
+            if content.startswith("[参考信息]"):
+                continue
+            cleaned.append(HumanMessage(content=content))
+    return cleaned
+
+
 def _message_to_dict(msg: BaseMessage) -> dict:
     """
     把 LangChain Message 对象转成可序列化的字典。
@@ -63,17 +92,18 @@ def _message_to_dict(msg: BaseMessage) -> dict:
     elif isinstance(msg, AIMessage):
         return {"role": "ai", "content": msg.content}
     else:
-        return {"role": "unknown", "content": str(msg.content)}
+        # ToolMessage 等不应进入存储；兜底转成 human 文本
+        return {"role": "human", "content": str(getattr(msg, "content", ""))}
 
 
 def _dict_to_message(d: dict) -> BaseMessage:
-    """把字典转回 LangChain Message 对象"""
-    if d.get("role") == "human":
-        return HumanMessage(content=d["content"])
-    elif d.get("role") == "ai":
-        return AIMessage(content=d["content"])
-    else:
-        return HumanMessage(content=d["content"])
+    """把字典转回 LangChain Message 对象（永不还原为 ToolMessage）"""
+    role = d.get("role")
+    content = d.get("content", "")
+    if role == "ai":
+        return AIMessage(content=content)
+    # human / unknown / tool 历史脏数据 → 一律当 human，避免再冒出 role=tool
+    return HumanMessage(content=content)
 
 
 def get_history(session_id: str) -> List[BaseMessage]:
@@ -92,6 +122,8 @@ def get_history(session_id: str) -> List[BaseMessage]:
             data = json.load(f)
         
         messages = [_dict_to_message(m) for m in data.get("messages", [])]
+        # 再次过滤，清掉历史上可能残留的非法串
+        messages = filter_messages_for_storage(messages)
         logger.info(f"[Session] 加载历史: session={session_id}, 消息数={len(messages)}")
         return messages
     except Exception as e:
@@ -107,8 +139,9 @@ def save_history(session_id: str, messages: List[BaseMessage]):
     _ensure_session_dir()
     filepath = _session_file(session_id)
     
-    # 截断：只保留最近的消息
-    truncated = messages[-MAX_HISTORY:]
+    # 先过滤掉 Tool 调用链，再截断
+    conversational = filter_messages_for_storage(messages)
+    truncated = conversational[-MAX_HISTORY:]
     
     # 转为可序列化的字典列表
     msg_dicts = [_message_to_dict(m) for m in truncated]
@@ -181,55 +214,3 @@ def list_sessions() -> List[dict]:
     # 按更新时间倒序（最新的在前）
     sessions.sort(key=lambda x: x["updated_at"], reverse=True)
     return sessions
-"""
-会话管理模块
-
-负责存储每个商家的对话历史，实现多轮对话。
-
-为什么需要这个？
-现在每次请求都是"失忆"的：
-  商家问 "今天营业额多少" → Agent 查了，回复 "3580 元"
-  商家问 "那昨天呢"       → Agent 不知道"昨天"是在问营业额，因为它没有之前的记忆
-
-有了会话管理后：
-  商家问 "今天营业额多少" → Agent 查了，回复 "3580 元" → 存入历史
-  商家问 "那昨天呢"       → Agent 看到历史里有"营业额"，知道在问什么 → 查昨天的营业额
-"""
-
-from langchain_core.messages import BaseMessage
-
-
-# 最大历史消息数（防止对话太长占满上下文窗口）
-MAX_HISTORY = 20
-
-# 会话存储：{session_id: [消息列表]}
-"""
-    {
-  "会话A的uuid": [消息1, 消息2, ...],
-  "会话B的uuid": [消息1, ...],
-    }
-"""
-_sessions: dict[str, list[BaseMessage]] = {}
-
-
-
-def get_history(session_id: str) -> list[BaseMessage]:
-    """
-    获取指定会话的历史消息。
-    如果会话不存在，返回空列表。
-    """
-    return _sessions.get(session_id, [])
-
-
-def save_history(session_id: str, messages: list[BaseMessage]):
-    """
-    保存指定会话的消息历史。
-    只保留最近的 MAX_HISTORY 条消息，防止上下文过长。
-    """
-    # 截断：只保留最近的消息
-    _sessions[session_id] = messages[-MAX_HISTORY:]
-
-
-def clear_history(session_id: str):
-    """清空指定会话的历史"""
-    _sessions.pop(session_id, None)

@@ -142,12 +142,51 @@ def call_llm(state: AgentState) -> dict:
     )
 
     system_message = SystemMessage(content=prompt_with_date)
-    full_messages = [system_message] + list(messages)
+    # 去掉「孤立的 ToolMessage」（前面没有带 tool_calls 的 AI），避免 DashScope/OpenAI 400
+    safe_messages = _sanitize_tool_pairing(list(messages))
+    full_messages = [system_message] + safe_messages
     
     logger.info(f"[CallLLM] 调用 LLM, 消息数: {len(full_messages)}")
 
     response = llm.invoke(full_messages)
     return {"messages": [response]}
+
+
+def _sanitize_tool_pairing(messages: list) -> list:
+    """
+    保证发给 LLM 的消息满足：
+    role=tool 必须跟在带 tool_calls 的 AIMessage 之后（可连续多条 ToolMessage）。
+    """
+    from langchain_core.messages import ToolMessage
+
+    final = []
+    i = 0
+    while i < len(messages):
+        msg = messages[i]
+        if isinstance(msg, AIMessage) and getattr(msg, "tool_calls", None):
+            # 收集紧随其后的 ToolMessage
+            j = i + 1
+            tool_msgs = []
+            while j < len(messages) and isinstance(messages[j], ToolMessage):
+                tool_msgs.append(messages[j])
+                j += 1
+            if tool_msgs:
+                final.append(msg)
+                final.extend(tool_msgs)
+            else:
+                logger.warning("[CallLLM] 丢弃无 Tool 结果的 AI tool_calls 声明")
+            i = j
+            continue
+        if isinstance(msg, ToolMessage):
+            logger.warning(
+                "[CallLLM] 丢弃孤立 ToolMessage（缺少前置 tool_calls）: %s",
+                (msg.content or "")[:80],
+            )
+            i += 1
+            continue
+        final.append(msg)
+        i += 1
+    return final
 
 
 def should_continue(state: AgentState) -> str:
@@ -291,24 +330,44 @@ def chat_stream(message: str, session_id: str = None):
         "session_id": session_id
     }
 
+    def _is_placeholder_content(text: str) -> bool:
+        """
+        模型在决定调工具前，常先吐出「。」「嗯」等占位碎片。
+        stream_mode=messages 会把这些当成 content 推给前端，造成界面上单独一个句号。
+        """
+        t = (text or "").strip()
+        if not t:
+            return True
+        # 极短且几乎全是标点/语气，视为噪声
+        if len(t) <= 3 and all(
+            ch in "。.?？!！…,~～、，,；;：:、·—-\n\r\t 嗯啊呃 "
+            for ch in t
+        ):
+            return True
+        return False
+
     async def async_generator():
         from langchain_core.messages import ToolMessage
-        
-        # 收集本次对话产生的所有消息（用于保存历史）
-        collected = []
+        from agent.session import get_history
+
+        # 流式 chunk 的 content 是增量，必须拼接成完整回复再落盘
+        accumulated = ""
 
         async for chunk in agent_graph.astream(
             initial_state,
             stream_mode="messages"
         ):
             msg, metadata = chunk
-            
+            # memorize 往 state 写入历史 AI 时也会被 messages 流推出来；
+            # 只收 call_llm 产出的正文，否则会把前几轮回答拼进本轮。
+            node = (metadata or {}).get("langgraph_node")
+
             # AI 回复内容
             if msg.content and isinstance(msg, AIMessage):
-                collected.append(msg)
-                
                 # 检查是否有工具调用
                 if hasattr(msg, 'tool_calls') and msg.tool_calls:
+                    if node and node != "call_llm":
+                        continue
                     for tc in msg.tool_calls:
                         yield {
                             "type": "tool_call",
@@ -316,20 +375,27 @@ def chat_stream(message: str, session_id: str = None):
                             "args": tc["args"]
                         }
                 else:
+                    if node != "call_llm":
+                        continue
+                    # 跳过调工具前的占位符（如单独的「。」）
+                    if _is_placeholder_content(msg.content):
+                        continue
+                    accumulated += msg.content
                     # 普通文字内容
                     yield {"type": "content", "content": msg.content}
             
-            # 工具返回结果
+            # 工具返回结果（展示给前端，但不写入会话 JSON）
             elif isinstance(msg, ToolMessage):
-                collected.append(msg)
                 yield {
                     "type": "tool_result",
                     "tool": msg.name,
                     "result": msg.content[:200]  # 只返回前 200 字
                 }
 
-        # 保存历史（用记忆模块）
-        if collected:
-            memory.save_working_memory(session_id, collected)
+        # 保存：旧历史 + 本轮用户消息 + 完整 AI 文字回复
+        to_save = list(get_history(session_id)) + [HumanMessage(content=message)]
+        if accumulated.strip():
+            to_save.append(AIMessage(content=accumulated.strip()))
+        memory.save_working_memory(session_id, to_save)
 
     return async_generator()
