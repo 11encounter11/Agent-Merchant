@@ -45,56 +45,45 @@
 ## 四、项目目录结构
 
 ```
-e:/苍穹/苍穹外卖/
-├── backend/                          # Java 后端（Spring Boot，已有，不动）
-├── admin-web/                        # 管理端前端（Vue 2，已有）
-│   └── src/
-│       ├── views/agent/index.vue     # 对话页面（已完成）
-│       ├── api/agent.ts              # SSE 流式 API 封装
-│       └── router.ts                 # 路由（含 /agent 路径）
-├── agent-service/                    # Python Agent 服务
-│   ├── main.py                       # FastAPI 入口 + 日志初始化
-│   ├── config.py                     # 配置管理（Pydantic Settings）
-│   ├── .env                          # 环境变量（不提交 Git）
-│   ├── requirements.txt              # Python 依赖
-│   ├── run_eval.py                   # 50 题单轮评测脚本
-│   ├── run_multiturn_eval.py         # 15 组多轮对话评测脚本
-│   ├── eval_dataset.json             # 50 题评测集
-│   ├── eval_multiturn.json           # 15 组多轮对话评测集
-│   ├── test_framework.py             # 7 大模块框架验证脚本
-│   ├── CONTEXT.md                    # 本文件
-│   ├── agent/
-│   │   ├── chat_agent.py             # [规划模块] LangGraph 图 + 对外接口
-│   │   ├── prompts.py                # [规划模块] System Prompt v3
-│   │   ├── perception.py             # [感知模块] 输入预处理 + 意图分类
-│   │   ├── memory.py                 # [记忆模块] 会话记忆 + 知识记忆
-│   │   ├── reflection.py             # [反思模块] 输出校验/身份/边界
-│   │   ├── logging_config.py         # [日志模块] 统一日志配置
-│   │   ├── session.py                # [记忆-工作记忆] JSON 文件持久化
-│   │   ├── knowledge/                # [记忆-长期记忆] RAG 知识库
-│   │   │   ├── knowledge_base.py     # 混合检索（关键词 + 向量）
-│   │   │   └── data/                 # 知识文档（JSON 格式）
-│   │   │       ├── holidays.json     # 节假日日期表
-│   │   │       ├── dish_aliases.json # 菜品别名映射
-│   │   │       ├── boundary.json     # 能力边界规则
-│   │   │       ├── identity.json     # 身份声明规则
-│   │   │       └── faq.json          # 常见问答模板
-│   │   └── tools/                    # [工具模块]
-│   │       ├── tool_registry.py      # 统一注册/调用/日志
-│   │       ├── sales_tools.py        # 营业额/订单/用户（查 MySQL）
-│   │       ├── dish_tools.py         # 菜品列表/搜索（查 MySQL）
-│   │       └── order_action_tools.py # 接单/拒单/停售/起售（调 Java API）
-│   ├── db/
-│   │   └── database.py               # MySQL 异步连接（aiomysql）
-│   ├── schemas/
-│   │   └── chat.py                   # ChatRequest / ChatResponse 模型
-│   ├── docs/
-│   │   └── PROJECT_RETROSPECTIVE.md  # 项目问题回顾文档
-│   ├── eval_results/                 # 评测结果目录
-│   ├── logs/                         # 日志目录
-│   └── data/sessions/                # 会话持久化目录
-└── database/
-    └── sky.sql                       # 数据库建表 SQL
+agent-service/                        # Python Agent 服务
+├── main.py                           # FastAPI 入口
+├── config.py                         # 配置（Pydantic Settings）
+├── .env / .env.example               # 环境变量
+├── requirements.txt
+├── README.md
+├── CONTEXT.md                        # 本文件
+├── api/
+│   └── routes.py                     # /health、chat、chat/stream
+├── agent/
+│   ├── chat_agent.py                 # 兼容导出（chat / chat_stream / agent_graph）
+│   ├── service.py                    # 对外对话服务
+│   ├── graph.py                      # LangGraph 建图
+│   ├── nodes.py                      # 感知/记忆/LLM/反思节点
+│   ├── messages.py                   # 消息清洗与流式过滤
+│   ├── prompts.py                    # System Prompt
+│   ├── perception.py                 # 感知：输入预处理
+│   ├── memory.py                     # 记忆：会话 + RAG
+│   ├── reflection.py                 # 反思：输出校验
+│   ├── logging_config.py             # 日志
+│   ├── session.py                    # 会话 JSON 持久化
+│   ├── knowledge/                    # RAG 知识库
+│   │   ├── knowledge_base.py
+│   │   └── data/*.json               # 关键词 + 文案（唯一规则源）
+│   └── tools/
+│       ├── __init__.py               # ALL_TOOLS
+│       ├── tool_registry.py          # 工具名册
+│       ├── sales_tools.py
+│       ├── dish_tools.py
+│       └── order_action_tools.py
+├── db/database.py                    # MySQL 连接池
+├── schemas/chat.py
+├── scripts/                          # 评测与数据脚本
+├── tests/                            # 冒烟测试
+├── eval/                             # 评测集与结果
+├── learning/                         # 原 graph学习/（自学草稿，不参与运行）
+├── docs/
+├── data/sessions/                    # 运行时会话（gitignore）
+└── logs/                             # 运行时日志（gitignore）
 ```
 
 ---
@@ -136,6 +125,20 @@ e:/苍穹/苍穹外卖/
 - **Bug 修复**：5 个 Bug（E10 身份替换、A10 按天拆分、C04/D04 停售查询、E03 边界拒绝、A09 端午节日期）
 - **RAG 知识库填充**：24 条知识（5 个 JSON 文件）
 
+### v0.2.0 精进迭代 ✅
+- **感知模块落地**：`perception.py` 实现关键词意图预分类（边界/操作/查询/问候），减少无效 LLM 调用
+- **RAG 检索优化**：`memory.py` 增加知识触发关键词判断，非知识问题跳过 embedding 请求
+- **新增 4 个 Tool**：套餐列表/套餐搜索/趋势分析/热销排行，总数升至 **13 个**
+- **异常处理增强**：数据库连接和 Java API 调用增加指数退避重试、超时控制、友好错误消息
+- **Token 消耗监控**：`nodes.py` 记录每次 LLM 调用的 token 用量，日志输出
+- **数据库连接池管理**：`main.py` 增加 lifespan 事件，服务关闭时释放连接池
+- **反思模块增强**：`reflection.py` 边界检查增加拒绝信号词识别和越界内容检测
+- **配置集中管理**：`config.py` 增加 LLM_TEMPERATURE / MAX_HISTORY / ENABLE_LLM_CACHE 等配置项
+- **会话管理 UI**：前端增加历史会话侧边栏（列表/切换/删除）
+- **后端会话 API**：新增 `GET /api/agent/sessions` 和 `DELETE /api/agent/sessions/{id}`
+- **异步化**：LLM 调用统一使用异步模式
+- **版本升级**：服务版本升至 0.2.0
+
 ---
 
 ## 六、当前状态 & 下一步
@@ -146,19 +149,28 @@ e:/苍穹/苍穹外卖/
 - RAG 知识库已填充（混合检索）
 - 评测通过率 96%
 - 项目回顾文档已创建
+- **v0.2.0 精进迭代已完成（12 项改进）**
+
+### v0.2.0 后已完成（下一步已实现的）
+1. ✅ 感知模块意图预分类（轻量规则引擎）
+2. ✅ 会话管理 UI（前端历史会话列表/切换/删除）
+3. ✅ Token 消耗监控（日志输出）
+4. ✅ 经营趋势分析 + 热销排行（新增 2 个分析 Tool）
+5. ✅ 套餐管理（新增 2 个 Tool）
+6. ✅ 异常处理增强（重试/超时/连接池管理）
+7. ✅ 反思模块边界检测增强
 
 ### 下一步可选方向
 
 **中期改进**：
-1. 中文 embedding 优化（修复 A01/A10 启动瞬态 500 错误）
-2. 会话管理 UI（前端增加历史会话列表/切换）
-3. Token 消耗监控（记录每次 LLM 调用的 token 数）
+1. LLM 响应缓存（相同查询短时内返回缓存结果）
+2. 经营报告自动生成（日/周/月报）
+3. 主动推送（Agent 主动提醒商家）
 
 **远期改进**：
-1. 意图预分类（轻量模型做快速意图识别，减少 LLM 调用）
-2. 主动推送（Agent 主动提醒商家）
-3. 经营报告生成（定时生成日/周/月经营分析）
-4. 多 Agent 协作（拆分为数据查询 Agent + 运营建议 Agent）
+1. 多 Agent 协作（拆分为数据查询 Agent + 运营建议 Agent）
+2. 本地意图模型替代 LLM 做简单分类
+3. 前端对话历史回看（加载历史消息到聊天区域）
 
 ---
 
@@ -219,27 +231,26 @@ e:/苍穹/苍穹外卖/
 | query_user_stats | 查询用户统计 | begin_date, end_date | 查 MySQL |
 | query_dish_list | 查询菜品列表 | category_name, **status** | 查 MySQL |
 | query_dish_by_name | 按名搜索菜品 | dish_name | 查 MySQL |
+| **query_setmeal_list** | **查询套餐列表** | **category_name, status** | **查 MySQL** |
+| **query_setmeal_by_name** | **按名搜索套餐** | **setmeal_name** | **查 MySQL** |
+| **query_trend_analysis** | **经营趋势分析** | **days** | **查 MySQL（多表聚合）** |
+| **query_top_dishes** | **热销菜品排行** | **days, top_n** | **查 MySQL（多表聚合）** |
 | accept_order | 接单 | order_id | 调 Java API |
 | reject_order | 拒单 | order_id, reason | 调 Java API |
 | stop_dish | 停售菜品 | dish_id | 调 Java API |
 | start_dish | 起售菜品 | dish_id | 调 Java API |
 
-加粗参数为最近新增的参数。
+加粗参数为新增项目，总数已达 **13 个 Tool**。
 
 ---
 
 ## 十、评测结果
 
-### 单轮评测（50 题）
-- 评测脚本：`run_eval.py`
-- 评测集：`eval_dataset.json`（5 大类 × 10 题）
-- 最新通过率：**96%**（48/50）
-- 失败项：A01/A10 为启动瞬态 500 错误（DashScope embedding 初始化延迟）
-
-### 多轮对话评测（15 组）
-- 评测脚本：`run_multiturn_eval.py`
-- 评测集：`eval_multiturn.json`（15 组多轮对话）
-- 覆盖场景：上下文指代、条件修改、否定修正、批量操作、经营建议追问
+### 单轮 / 多轮自动化测试
+- 评测脚本：`scripts/run_test.py`
+- 评测集：`eval/test_cases.json`（单轮 20 题 + 多轮 2 组）
+- 结果目录：`eval/results/test_*.json`
+- 用法：先启动服务，再 `python scripts/run_test.py`
 
 ---
 
@@ -279,9 +290,9 @@ $env:NODE_OPTIONS = "--openssl-legacy-provider"
 npm run serve
 
 # 4. 跑评测
-.\venv\Scripts\python.exe run_eval.py              # 50 题单轮评测
-.\venv\Scripts\python.exe run_multiturn_eval.py     # 15 组多轮评测
-.\venv\Scripts\python.exe test_framework.py         # 框架验证
+.\venv\Scripts\python.exe scripts/run_test.py              # Agent 自动化测试
+.\venv\Scripts\python.exe scripts/run_test.py --ids A01,E02
+.\venv\Scripts\python.exe scripts/export_graph.py            # 导出流程图
 ```
 
 ---

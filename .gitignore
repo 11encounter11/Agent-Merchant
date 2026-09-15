@@ -11,7 +11,15 @@ venv/
 # IDE
 .idea/
 .vscode/
+.cursor/
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# Runtime / generated
+logs/
+data/sessions/
+eval/results/
+flow_graph_v3.png
+docs/flow_graph.png
