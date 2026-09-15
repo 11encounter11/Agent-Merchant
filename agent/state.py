@@ -5,16 +5,9 @@ Agent 状态定义（AgentState）
 每个节点通过读写这个 TypedDict 来传递数据。
 
 字段说明：
-- messages:          对话消息列表（LangGraph 自动合并）
-- user_input:        当前用户输入（清洗后）
-- session_id:        会话 ID
-- intent:            意图分类结果（perceive 写入）
-- context:           情境信息：天气、日期、温度等（perceive 写入）
-- analysis_result:   数据分析结果（analyst / execute_tools 写入）
-- strategy:          策略建议（strategist 写入）
-- token_usage:       Token 消耗累计（各 LLM 节点累加）
-- tool_steps:        本轮已执行工具次数（护栏）
-- guard_reason:      护栏触发原因（空字符串表示未触发）
+- messages / user_input / session_id / intent / context
+- analysis_result / strategy / token_usage / tool_steps / guard_reason
+- next_worker / worker_history / supervisor_plan  （Supervisor 调度）
 """
 
 from typing import Annotated, Sequence
@@ -37,3 +30,7 @@ class AgentState(TypedDict):
     token_usage: dict
     tool_steps: int
     guard_reason: str
+    # Supervisor–Worker
+    next_worker: str
+    worker_history: list
+    supervisor_plan: list

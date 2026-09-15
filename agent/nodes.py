@@ -36,6 +36,7 @@ from agent.guards import (
     invoke_tool_guarded,
     guard_user_message,
 )
+from agent.supervisor import decide_next_worker
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -62,6 +63,14 @@ def dispatcher(state: AgentState) -> dict:
     intent_type = intent.get("intent", "unknown")
     logger.info(f"[Dispatcher] 意图={intent_type}")
     return {}
+
+
+def supervisor(state: AgentState) -> dict:
+    """
+    Supervisor：决定下一个 Worker（规则状态机 + Plan-and-Execute 计划表）。
+    不调 LLM，保证可测、可控。
+    """
+    return decide_next_worker(state)
 
 
 def analyst(state: AgentState) -> dict:
@@ -294,6 +303,15 @@ def call_llm(state: AgentState) -> dict:
     if guard_reason:
         extras.append(f"## 护栏提示\n{guard_user_message(guard_reason)}")
 
+    plan = state.get("supervisor_plan") or []
+    history = state.get("worker_history") or []
+    if plan or history:
+        extras.append(
+            f"## 协作链路（Supervisor）\n"
+            f"计划：{' → '.join(plan) if plan else '（无）'}；"
+            f"已执行：{' → '.join(history) if history else '（无）'}"
+        )
+
     system_content = prompt_with_date
     if extras:
         system_content += "\n\n" + "\n\n".join(extras)
@@ -369,7 +387,7 @@ def reflect(state: AgentState) -> dict:
 
 
 def route_after_dispatcher(state: AgentState) -> str:
-    """dispatcher 后的路由。"""
+    """dispatcher 后：greeting→简单回复；boundary→拒绝；其余→Supervisor。"""
     intent = state.get("intent", {})
     intent_type = intent.get("intent", "unknown")
 
@@ -380,15 +398,23 @@ def route_after_dispatcher(state: AgentState) -> str:
     return "complex"
 
 
-def route_after_analyst(state: AgentState) -> str:
-    """analyst 后：有 tool_calls 且未超步数 → tools，否则 call_llm。"""
-    if is_tool_steps_exceeded(int(state.get("tool_steps") or 0)):
+def route_after_supervisor(state: AgentState) -> str:
+    """supervisor 后：按 next_worker 派发。"""
+    nxt = state.get("next_worker") or "call_llm"
+    if nxt not in ("analyst", "strategist", "reviewer", "call_llm"):
         return "call_llm"
+    return nxt
+
+
+def route_after_analyst(state: AgentState) -> str:
+    """analyst 后：有 tool_calls → tools；否则回 Supervisor 继续调度。"""
+    if is_tool_steps_exceeded(int(state.get("tool_steps") or 0)):
+        return "supervisor"
 
     messages = state.get("messages") or []
     if not messages:
-        return "call_llm"
+        return "supervisor"
     last = messages[-1]
     if hasattr(last, "tool_calls") and last.tool_calls:
         return "tools"
-    return "call_llm"
+    return "supervisor"

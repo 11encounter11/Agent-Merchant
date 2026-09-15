@@ -77,6 +77,11 @@ class Settings(BaseSettings):
     TOOL_MAX_RETRIES: int = 2
     IDEMPOTENCY_TTL_SEC: int = 600
 
+    # ================================================================
+    # Supervisor（面经阶段 2）
+    # ================================================================
+    MAX_SUPERVISOR_ROUNDS: int = 6
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

@@ -51,6 +51,9 @@ async def chat(message: str, session_id: str = None) -> dict:
         "token_usage": {},
         "tool_steps": 0,
         "guard_reason": "",
+        "next_worker": "",
+        "worker_history": [],
+        "supervisor_plan": [],
     })
 
     final_messages = result.get("messages", [])
@@ -107,6 +110,9 @@ def chat_stream(message: str, session_id: str = None):
         "token_usage": {},
         "tool_steps": 0,
         "guard_reason": "",
+        "next_worker": "",
+        "worker_history": [],
+        "supervisor_plan": [],
     }
 
     async def async_generator():
