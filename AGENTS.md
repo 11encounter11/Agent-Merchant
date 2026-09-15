@@ -36,7 +36,8 @@
 | 阶段 | 做什么 | 状态 |
 |------|--------|------|
 | **A** | 修通 analyst 真调工具；注入现有 JSON 知识；改顾问文案 | **已完成** |
-| **面经-1（当前）** | 护栏：步数 / token 预算 / 工具超时重试 / 入参兜底 | **下一步** |
+| **面经-1** | 护栏：步数 / token 预算 / 工具超时重试 / 入参兜底 | **已完成** |
+| **面经-2（当前）** | Supervisor 多角色 | **下一步** |
 | B（可选） | 精简 Wiki——默认可跳过 | 后置 |
 | C（有条件） | 有长文后上 LlamaIndex，退役 chromadb | 后置 |
 | D / 面经-2 | Supervisor + 业务 Skill + SSE `agent` 事件 | 面经-1 之后 |
@@ -53,7 +54,8 @@
 第一句直接说其一即可：
 
 - `按 AGENTS.md 做阶段 A`（已完成）
-- `按 docs/INTERVIEW_COVERAGE.md 做阶段 1`（护栏，当前）
+- `按 docs/INTERVIEW_COVERAGE.md 做阶段 2`（Supervisor，当前）
+- `按 docs/INTERVIEW_COVERAGE.md 做阶段 1`（护栏，已完成）
 - `按 AGENTS.md 讨论阶段 E 的 UI`
 - `先读 AGENTS.md，不要全库扫描`
 

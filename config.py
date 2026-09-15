@@ -68,6 +68,15 @@ class Settings(BaseSettings):
     CORRELATION_SIGNIFICANT: float = 0.5
     FORECAST_CONFIDENCE: float = 0.8
 
+    # ================================================================
+    # 工程护栏（面经阶段 1：防死循环 / 预算 / 工具稳健性）
+    # ================================================================
+    MAX_TOOL_STEPS: int = 4
+    TOKEN_BUDGET: int = 12000
+    TOOL_TIMEOUT_SEC: float = 20.0
+    TOOL_MAX_RETRIES: int = 2
+    IDEMPOTENCY_TTL_SEC: int = 600
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

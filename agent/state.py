@@ -10,9 +10,11 @@ Agent 状态定义（AgentState）
 - session_id:        会话 ID
 - intent:            意图分类结果（perceive 写入）
 - context:           情境信息：天气、日期、温度等（perceive 写入）
-- analysis_result:   数据分析结果（analyst 写入）
+- analysis_result:   数据分析结果（analyst / execute_tools 写入）
 - strategy:          策略建议（strategist 写入）
-- token_usage:       Token 消耗统计（call_llm 写入）
+- token_usage:       Token 消耗累计（各 LLM 节点累加）
+- tool_steps:        本轮已执行工具次数（护栏）
+- guard_reason:      护栏触发原因（空字符串表示未触发）
 """
 
 from typing import Annotated, Sequence
@@ -25,29 +27,13 @@ from typing_extensions import TypedDict
 class AgentState(TypedDict):
     """LangGraph 图的全局状态，每个节点通过它传递数据。"""
 
-    # 对话消息（LangGraph 的 add_messages 会自动追加而非覆盖）
     messages: Annotated[Sequence[BaseMessage], add_messages]
-
-    # 当前用户输入（perceive 清洗后写入）
     user_input: str
-
-    # 会话 ID（用于关联多轮对话）
     session_id: str
-
-    # 意图分类结果，perceive 写入
-    # 格式：{"intent": "greeting|query_analysis|query_report|boundary|unknown", "confidence": 0.0~1.0}
     intent: dict
-
-    # 情境信息：天气、日期、星期、温度等，perceive 写入
     context: dict
-
-    # 数据分析结果，analyst 写入
-    # 格式：{"tool": "factor_decomposition", "result": {...}, ...}
     analysis_result: dict
-
-    # 策略建议，strategist 写入
-    # 格式：{"recommendations": [...], "reasoning": "..."}
     strategy: dict
-
-    # Token 消耗统计，call_llm 写入
     token_usage: dict
+    tool_steps: int
+    guard_reason: str
