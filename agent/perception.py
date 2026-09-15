@@ -5,7 +5,7 @@
 - 输入清洗：去空白、控制字符
 - 意图分类：关键词规则快速分类（greeting / query_analysis / query_report / boundary / unknown）
 - 情境注入：自动获取当前日期、星期、时间，写入 state.context
-- greeting 短路直接回复，boundary 直接拒绝，不走 LLM
+- greeting / knowledge 短路走小模型；boundary / 注入拦截不走 LLM
 
 不做什么：
 - 不做 LLM 调用（意图分类用关键词规则，够用且快）
@@ -42,6 +42,14 @@ _REPORT_KW = [
     "今天怎么样", "这周怎么样", "最近怎么样",
 ]
 
+# 纯知识（JSON FAQ / 身份，不调 SQL 工具，走小模型）
+_KNOWLEDGE_KW = [
+    "你是谁", "你叫什么", "谁开发", "什么模型",
+    "你会什么", "能做什么", "你是什么",
+    "退款规则", "退款政策", "怎么退款",
+    "节假日有哪些", "法定节假日",
+]
+
 # 边界类（直接拒绝）
 _BOUNDARY_KW = [
     "写文案", "写文章", "写报告", "翻译", "写代码", "写诗",
@@ -70,10 +78,10 @@ def classify_intent(user_input: str) -> dict:
     意图分类：用关键词规则快速分类。
 
     返回：
-        {"intent": "greeting|thanks|query_analysis|query_report|boundary|unknown",
+        {"intent": "greeting|thanks|knowledge|query_analysis|query_report|boundary|unknown",
          "confidence": 0.0~1.0}
 
-    分类优先级：boundary > analysis > report > greeting > thanks > unknown
+    分类优先级：boundary > analysis > report > knowledge > greeting > thanks > unknown
     """
     cleaned = user_input.strip().lower()
 
@@ -92,15 +100,20 @@ def classify_intent(user_input: str) -> dict:
         if kw in cleaned:
             return {"intent": "query_report", "confidence": 0.8, "keyword": kw}
 
-    # 4. 打招呼
+    # 4. 纯知识（规定/身份，不查库）
+    for kw in _KNOWLEDGE_KW:
+        if kw in cleaned:
+            return {"intent": "knowledge", "confidence": 0.75, "keyword": kw}
+
+    # 5. 打招呼
     if any(kw in cleaned for kw in _GREETING_KW):
         return {"intent": "greeting", "confidence": 0.8}
 
-    # 5. 感谢
+    # 6. 感谢
     if any(kw in cleaned for kw in _THANKS_KW):
         return {"intent": "thanks", "confidence": 0.9}
 
-    # 6. 兜底：交给 LLM 处理
+    # 7. 兜底：交给 LLM 处理（低置信 → 模型路由回退大模型）
     return {"intent": "unknown", "confidence": 0.0}
 
 

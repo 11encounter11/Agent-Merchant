@@ -5,6 +5,7 @@ LangGraph 节点函数
 - 定义节点函数，构成 LangGraph 图的执行流程
 - perceive / dispatcher / analyst / execute_tools / strategist / reviewer / call_llm / reflect
 - 阶段 1 护栏：步数、token 预算、工具超时重试与入参校验
+- 阶段 5：模型路由（inspect_turn / invoke_routed）+ 工具门禁
 
 不做什么：
 - 不创建 LLM 实例（从 llm.py 获取）
@@ -17,15 +18,21 @@ import logging
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from agent.state import AgentState
-from agent.llm import get_llm, get_llm_with_tools
+from agent.llm import get_llm, inspect_turn, invoke_routed
 from agent.prompts import (
     SYSTEM_PROMPT,
     ANALYST_PROMPT,
     STRATEGIST_PROMPT,
     REVIEWER_PROMPT,
 )
-from agent.perception import preprocess, classify_intent, inject_context
+from agent.perception import inject_context
 from agent.reflection import sanitize as reflect_sanitize
+from agent.security import (
+    filter_tools,
+    is_tool_allowed,
+    deny_tool_message,
+    injection_system_note,
+)
 from agent.messages import sanitize_tool_pairing
 from agent.tools import ALL_TOOLS
 from agent.guards import (
@@ -43,17 +50,21 @@ logger = logging.getLogger(__name__)
 
 
 def perceive(state: AgentState) -> dict:
-    """输入清洗 + 意图分类 + 情境注入。"""
-    user_input = state.get("user_input", "")
-    cleaned = preprocess(user_input)
-    intent = classify_intent(cleaned)
+    """输入清洗 + 注入扫描 + 意图分类 + 模型路由 + 情境注入。"""
+    signals = inspect_turn(state.get("user_input", ""))
     context = inject_context()
-
-    logger.info(f"[Perceive] 输入='{cleaned}', 意图={intent['intent']}")
+    intent = signals["intent"]
+    logger.info(
+        f"[Perceive] 输入={signals['user_input']!r} "
+        f"意图={intent.get('intent')} tier={signals['llm_tier']} "
+        f"security={signals['security'].get('action')}"
+    )
     return {
-        "user_input": cleaned,
+        "user_input": signals["user_input"],
         "intent": intent,
         "context": context,
+        "llm_tier": signals["llm_tier"],
+        "security": signals["security"],
     }
 
 
@@ -89,26 +100,52 @@ def analyst(state: AgentState) -> dict:
         logger.warning("[Analyst] 工具步数已满，跳过选型")
         return {"guard_reason": "max_tool_steps"}
 
-    logger.info(f"[Analyst] 开始数据分析, intent={intent.get('intent')}")
+    security = state.get("security") or {}
+    intent_type = (intent or {}).get("intent") or "unknown"
+    gated_tools = filter_tools(ALL_TOOLS, intent_type, security)
+    if not gated_tools:
+        logger.info(f"[Analyst] 工具门禁：intent={intent_type} 无可用工具，跳过")
+        return {}
 
-    llm = get_llm_with_tools(ALL_TOOLS)
+    logger.info(
+        f"[Analyst] 开始数据分析, intent={intent_type} "
+        f"tools={[t.name for t in gated_tools]}"
+    )
+
+    extra_sys = [
+        f"当前日期：{context.get('current_date', '')} "
+        f"星期{context.get('weekday', '')}。"
+        f"本轮剩余可调工具步数：{remaining_tool_quota(tool_steps)}。"
+    ]
+    inj_note = injection_system_note(security)
+    if inj_note:
+        extra_sys.append(inj_note)
+
     messages = [
         SystemMessage(content=ANALYST_PROMPT),
-        SystemMessage(
-            content=(
-                f"当前日期：{context.get('current_date', '')} "
-                f"星期{context.get('weekday', '')}。"
-                f"本轮剩余可调工具步数：{remaining_tool_quota(tool_steps)}。"
-            )
-        ),
+        SystemMessage(content="\n".join(extra_sys)),
         HumanMessage(content=user_input),
     ]
-    response = llm.invoke(messages)
+    response = invoke_routed(messages, tier="large", tools=gated_tools)
     token_usage = merge_token_usage(token_usage, response)
 
     tool_calls = list(getattr(response, "tool_calls", None) or [])
     quota = remaining_tool_quota(tool_steps)
     guard_reason = state.get("guard_reason") or ""
+
+    gated_calls = [
+        tc for tc in tool_calls
+        if is_tool_allowed(intent_type, tc.get("name", ""), security)
+    ]
+    if len(gated_calls) < len(tool_calls):
+        dropped = [tc.get("name") for tc in tool_calls if tc not in gated_calls]
+        logger.warning(f"[Analyst] 工具门禁丢弃: {dropped}")
+        tool_calls = gated_calls
+        response = AIMessage(
+            content=getattr(response, "content", "") or "",
+            tool_calls=tool_calls,
+            id=getattr(response, "id", None),
+        )
 
     if tool_calls and len(tool_calls) > quota:
         logger.warning(
@@ -162,6 +199,8 @@ async def execute_tools(state: AgentState) -> dict:
 
     tool_map = {t.name: t for t in ALL_TOOLS}
     session_id = state.get("session_id") or ""
+    intent_type = (state.get("intent") or {}).get("intent") or "unknown"
+    security = state.get("security") or {}
     tool_messages = []
     analysis = dict(state.get("analysis_result") or {})
     executed = 0
@@ -173,7 +212,10 @@ async def execute_tools(state: AgentState) -> dict:
         call_id = tc.get("id") or name
         tool = tool_map.get(name)
 
-        if tool is None:
+        if not is_tool_allowed(intent_type, name, security):
+            content = deny_tool_message(name)
+            logger.warning(f"[ExecuteTools] {content}")
+        elif tool is None:
             content = f"未知工具: {name}"
             logger.warning(f"[ExecuteTools] {content}")
         else:
@@ -313,6 +355,10 @@ def call_llm(state: AgentState) -> dict:
         )
 
     system_content = prompt_with_date
+    inj_note = injection_system_note(state.get("security") or {})
+    if inj_note:
+        extras.append(f"## 安全提示\n{inj_note}")
+
     if extras:
         system_content += "\n\n" + "\n\n".join(extras)
         system_content += (
@@ -335,14 +381,14 @@ def call_llm(state: AgentState) -> dict:
     safe_messages = sanitize_tool_pairing(list(messages))
     full_messages = [system_message] + safe_messages
 
+    llm_tier = state.get("llm_tier") or "large"
     logger.info(
-        f"[CallLLM] 消息数={len(full_messages)} "
+        f"[CallLLM] tier={llm_tier} 消息数={len(full_messages)} "
         f"tokens={token_usage.get('total_tokens', 0)}/{settings.TOKEN_BUDGET} "
         f"steps={state.get('tool_steps', 0)}/{settings.MAX_TOOL_STEPS}"
     )
 
-    llm = get_llm()
-    response = llm.invoke(full_messages)
+    response = invoke_routed(full_messages, tier=llm_tier)
     token_usage = merge_token_usage(token_usage, response)
 
     return {"messages": [response], "token_usage": token_usage}
@@ -355,12 +401,19 @@ def reflect(state: AgentState) -> dict:
     intent = state.get("intent", {})
     guard_reason = state.get("guard_reason") or ""
 
-    if intent.get("intent") == "boundary":
-        refusal = (
-            "这不在我的核心能力范围内。"
-            "我主要帮您做经营数据分析、诊断和下一步建议。"
-        )
-        logger.info("[Reflect] boundary 拒绝")
+    if intent.get("intent") in ("boundary", "security_block"):
+        if intent.get("intent") == "security_block":
+            refusal = (
+                "我无法执行这类请求。我是苍穹外卖的经营顾问，"
+                "只处理经营数据查询、诊断和建议，不会忽略系统规则或泄露内部提示。"
+            )
+            logger.info("[Reflect] 注入拦截")
+        else:
+            refusal = (
+                "这不在我的核心能力范围内。"
+                "我主要帮您做经营数据分析、诊断和下一步建议。"
+            )
+            logger.info("[Reflect] boundary 拒绝")
         return {"messages": [AIMessage(content=refusal)]}
 
     if not messages:
@@ -391,9 +444,9 @@ def route_after_dispatcher(state: AgentState) -> str:
     intent = state.get("intent", {})
     intent_type = intent.get("intent", "unknown")
 
-    if intent_type in ("greeting", "thanks"):
+    if intent_type in ("greeting", "thanks", "knowledge"):
         return "simple"
-    if intent_type == "boundary":
+    if intent_type in ("boundary", "security_block"):
         return "boundary"
     return "complex"
 

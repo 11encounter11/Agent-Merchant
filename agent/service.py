@@ -43,6 +43,8 @@ def _initial_state(cleaned: str, session_id: str, context_messages: list) -> dic
         "next_worker": "",
         "worker_history": [],
         "supervisor_plan": [],
+        "llm_tier": "large",
+        "security": {},
     }
 
 

@@ -11,21 +11,22 @@
 |----|------|
 | 产品 | 管理端**商家经营顾问**（查数→诊断→建议），端口 **8100** |
 | 产品阶段 A | **已完成**（analyst 真调工具 + JSON 知识注入 + 顾问文案） |
-| 面经 1–4 | **已完成**（护栏 / Supervisor / Checkpointer / Redis+日志） |
-| **下一个该做** | **面经阶段 5**：模型路由 + 安全加固 + 最小评测 |
+| 面经 1–5 | **已完成**（护栏 / Supervisor / Checkpointer / Redis+日志 / 路由+安全+评测） |
+| **下一个该做** | **面经阶段 6**（有条件）：RAG 命中来源可观测 |
 | Git | 本地 `master` 已提交；**未配置 origin，未 push** |
 | 前端欢迎语 | `admin-web` **不一定在本仓库**；顾问文案改过 `index.vue`，若另仓需自行提交 |
 
 ### 新对话第一句（复制即可）
 
 ```text
-按 docs/INTERVIEW_COVERAGE.md 做阶段 5
+按 docs/INTERVIEW_COVERAGE.md 做阶段 6
 ```
 
 ### 最近本地提交（由新到旧）
 
 | Commit | 说明 |
 |--------|------|
+| （待提交） | feat(interview-5): 模型路由 + 注入/门禁 + 最小评测 |
 | `a2828d5` | feat(interview-4): Redis 会话/限流 + MySQL agent_chat_log |
 | `1ed28d8` | feat(interview-3): Checkpointer + thread_id |
 | `f830868` | feat(interview-2): Supervisor–Worker |
@@ -57,9 +58,9 @@
 
 ```
 perceive → dispatcher
-  → simple: call_llm → reflect
-  → boundary: reflect
-  → complex: supervisor ⇄ (analyst → tools? | strategist | reviewer) → call_llm → reflect
+  → simple (greeting/thanks/knowledge): call_llm(小模型) → reflect
+  → boundary / security_block: reflect
+  → complex: supervisor ⇄ (analyst → tools? | strategist | reviewer) → call_llm(大模型) → reflect
 ```
 
 | 模块 | 路径 | 备注 |
@@ -68,6 +69,8 @@ perceive → dispatcher
 | 调度 | `agent/supervisor.py` | 规则 Supervisor–Worker |
 | 节点 | `agent/nodes.py` | 含护栏接入 |
 | 护栏 | `agent/guards.py` | 步数/token/超时重试/幂等 |
+| LLM 路由 | `agent/llm.py` | 小/大模型；`inspect_turn` |
+| 安全 | `agent/security.py` | 注入拦截/降权 + 工具门禁 |
 | Checkpoint | `agent/checkpointing.py` + `main.py` lifespan | Sqlite 默认 |
 | 会话 | `agent/memory/session_memory.py` | 文件权威 + Redis 热缓存 |
 | 限流 | `agent/memory/rate_limit.py` | Redis 或本地窗口 |
@@ -81,22 +84,21 @@ Tool：**11 个**（analysis + business + external），见 `agent/tools/__init_
 
 | 阶段 | 做什么 | 状态 |
 |------|--------|------|
-| A / 面经 1–4 | 见上 | **已完成** |
-| **面经-5（当前）** | 小/大模型路由；工具门禁/注入防护；最小 eval | **下一步就做** |
-| 面经-6 | RAG 命中来源可观测（有条件） | 后置 |
+| A / 面经 1–5 | 见上 | **已完成** |
+| **面经-6（有条件）** | RAG 命中来源可观测 | **下一步** |
 | B/C | Wiki / LlamaIndex | 默认跳过或有条件 |
 | D/E/F | Skill、SSE agent 事件、UI、Langfuse | 可穿插 |
 
-阶段 5 验收细节写在 `docs/INTERVIEW_COVERAGE.md`「阶段 5」。
+阶段 5 已完成；阶段 6 验收细节见 `docs/INTERVIEW_COVERAGE.md`。
 
 ## 新对话必读（按需，勿整库）
 
 1. `AGENTS.md`（本文件）
 2. `docs/INTERVIEW_COVERAGE.md`
 3. `agent/graph.py` + `agent/supervisor.py` + `agent/nodes.py`
-4. `agent/llm.py` + `agent/service.py`（阶段 5 主要改这里）
-5. `agent/reflection.py`（安全加固）
-6. `eval/test_cases.json`（若已有评测胚）
+4. `agent/llm.py` + `agent/security.py` + `agent/service.py`
+5. `agent/reflection.py`
+6. `eval/interview5_cases.json` + `eval/run_eval.py`（阶段 5 最小评测）
 
 ## 启动备忘
 

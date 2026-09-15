@@ -22,8 +22,13 @@ class Settings(BaseSettings):
     LLM_API_KEY: str = ""
     LLM_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4/"
     LLM_MODEL: str = "GLM-4.7-Flash"
+    # 简单意图（greeting/thanks/知识）用的小模型；空则与 LLM_MODEL 相同
+    LLM_MODEL_SIMPLE: str = ""
     LLM_TEMPERATURE: float = 0.7
     LLM_MODEL_ALIAS: str = "智谱 GLM-4.7-Flash"
+    # 路由不准（置信度低于阈值）时回退大模型
+    LLM_ROUTE_FALLBACK_TO_LARGE: bool = True
+    LLM_ROUTE_CONFIDENCE_MIN: float = 0.5
 
     # ================================================================
     # Embedding 配置（用于 RAG 知识库向量化）
@@ -100,6 +105,11 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_PER_MINUTE: int = 30
     CHAT_LOG_ENABLED: bool = True
+
+    # ================================================================
+    # 安全（面经阶段 5：注入拦截 / 工具门禁）
+    # ================================================================
+    SECURITY_INJECTION_ENABLED: bool = True
 
     class Config:
         env_file = ".env"

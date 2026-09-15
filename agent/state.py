@@ -8,6 +8,7 @@ Agent 状态定义（AgentState）
 - messages / user_input / session_id / intent / context
 - analysis_result / strategy / token_usage / tool_steps / guard_reason
 - next_worker / worker_history / supervisor_plan  （Supervisor 调度）
+- llm_tier / security  （阶段 5：模型路由 + 注入/门禁）
 """
 
 from typing import Annotated, Sequence
@@ -34,3 +35,6 @@ class AgentState(TypedDict):
     next_worker: str
     worker_history: list
     supervisor_plan: list
+    # 阶段 5
+    llm_tier: str
+    security: dict
