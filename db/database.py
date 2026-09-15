@@ -89,3 +89,18 @@ async def execute_query(sql: str, params: tuple = None) -> list[dict]:
 
     logger.error(f"[DB] 查询最终失败，重试{_MAX_RETRIES}次后放弃: {last_error}")
     return []
+
+
+async def execute_write(sql: str, params: tuple = None) -> int:
+    """
+    执行写 SQL（INSERT/UPDATE/CREATE…），返回 rowcount。
+    失败抛出异常，由调用方决定是否降级。
+    """
+    pool = await get_pool()
+    async with pool.acquire() as conn:
+        async with conn.cursor() as cursor:
+            await asyncio.wait_for(
+                cursor.execute(sql, params),
+                timeout=_QUERY_TIMEOUT,
+            )
+            return cursor.rowcount

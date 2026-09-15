@@ -15,6 +15,9 @@ langgraph-checkpoint-sqlite>=2.0.0
 langchain-core>=0.3.0
 aiosqlite>=0.20.0
 
+# --- Redis（会话缓存 / 限流；不可用自动降级）---
+redis>=5.0.0
+
 # --- 数据库 ---
 aiomysql>=0.2.0
 cryptography>=42.0.0

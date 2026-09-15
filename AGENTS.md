@@ -26,7 +26,7 @@
 - 图：`perceive → dispatcher → supervisor ⇄ (analyst/tools|strategist|reviewer) → call_llm → reflect`，见 `agent/graph.py`
 - Tool：**11 个**（analysis + business + external），见 `agent/tools/__init__.py`；旧 sales/order 工具已删
 - 阶段 A 已修：analyst 真调工具、知识注入、顾问文案
-- 面经-1 护栏、面经-2 Supervisor、面经-3 Checkpointer 已落地（见 `docs/INTERVIEW_COVERAGE.md`）
+- 面经-1～4 已落地（护栏 / Supervisor / Checkpointer / Redis+日志），见 `docs/INTERVIEW_COVERAGE.md`
 - 启动：`.\venv\Scripts\python.exe main.py`；admin-web 需 OpenSSL legacy（`package.json` 已写）
 
 ## 下一步主线（按顺序做）
@@ -37,27 +37,22 @@
 | **面经-1** | 护栏：步数 / token 预算 / 工具超时重试 / 入参兜底 | **已完成** |
 | **面经-2** | Supervisor 多角色 | **已完成** |
 | **面经-3** | Checkpointer + thread_id 断点恢复 | **已完成** |
-| **面经-4（当前）** | Redis 会话/限流 + MySQL 对话日志表 | **下一步** |
+| **面经-4** | Redis 会话/限流 + MySQL 对话日志表 | **已完成** |
+| **面经-5（当前）** | 模型路由 + 安全加固 + 最小评测 | **下一步** |
 | B（可选） | 精简 Wiki——默认可跳过 | 后置 |
 | C（有条件） | 有长文后上 LlamaIndex，退役 chromadb | 后置 |
-| D | 业务 Skill + SSE `agent` 事件（Supervisor 已先做） | 可与面经后续穿插 |
-| E | 对话 UI：快捷芯片、专家/工具状态、数据卡 | 可与 D 穿插 |
-| F / 面经-5 | 新题集评测、引用脚注、可选 Langfuse | 收尾 |
+| D | 业务 Skill + SSE `agent` 事件 | 可穿插 |
+| E | 对话 UI | 可穿插 |
+| F | 评测增强 / 可选 Langfuse | 收尾 |
 
-> **面经工程完整方案**：见 [`docs/INTERVIEW_COVERAGE.md`](docs/INTERVIEW_COVERAGE.md)。  
-> 重开对话可说：`按 docs/INTERVIEW_COVERAGE.md 做阶段 4`
-
-验收 A：「为什么营业额下降」能跑出因子分解类工具，且规定类问题能用上 JSON 知识。
+> 重开对话可说：`按 docs/INTERVIEW_COVERAGE.md 做阶段 5`
 
 ## 新对话怎么开（省 token）
 
 第一句直接说其一即可：
 
-- `按 docs/INTERVIEW_COVERAGE.md 做阶段 4`（Redis+日志，当前）
-- `按 docs/INTERVIEW_COVERAGE.md 做阶段 3`（Checkpointer，已完成）
-- `按 docs/INTERVIEW_COVERAGE.md 做阶段 2`（Supervisor，已完成）
-- `按 docs/INTERVIEW_COVERAGE.md 做阶段 1`（护栏，已完成）
-- `按 AGENTS.md 讨论阶段 E 的 UI`
+- `按 docs/INTERVIEW_COVERAGE.md 做阶段 5`（路由+安全+评测，当前）
+- `按 docs/INTERVIEW_COVERAGE.md 做阶段 4`（已完成）
 - `先读 AGENTS.md，不要全库扫描`
 
 必读文件（按需打开，勿整库）：

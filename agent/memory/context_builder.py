@@ -41,13 +41,18 @@ class ContextBuilder:
         return any(kw in query_lower for kw in _KNOWLEDGE_TRIGGER_KW)
 
     def build_context(self, session_id: str, user_input: str) -> List[BaseMessage]:
-        """
-        组装完整上下文：[参考信息] + 历史 + 当前输入。
-        """
-        # 1. 会话历史
+        """同步组装（读文件历史）。"""
         history = session_memory.get_history(session_id)
+        return self._assemble(session_id, user_input, history)
 
-        # 2. 知识检索：关键词始终尝试；触发词才走向量补齐
+    async def abuild_context(self, session_id: str, user_input: str) -> List[BaseMessage]:
+        """异步组装（Redis 热缓存 → 文件）。"""
+        history = await session_memory.aget_history(session_id)
+        return self._assemble(session_id, user_input, history)
+
+    def _assemble(
+        self, session_id: str, user_input: str, history: List[BaseMessage]
+    ) -> List[BaseMessage]:
         messages = list(history)
 
         if self.kb:
@@ -57,8 +62,8 @@ class ContextBuilder:
                 knowledge_text = self.kb.format_context(results)
                 messages.insert(0, HumanMessage(content=f"[参考信息]\n{knowledge_text}"))
 
-        # 3. 当前用户输入
         messages.append(HumanMessage(content=user_input))
-
-        logger.info(f"[ContextBuilder] 组装上下文: session={session_id}, 消息数={len(messages)}")
+        logger.info(
+            f"[ContextBuilder] 组装上下文: session={session_id}, 消息数={len(messages)}"
+        )
         return messages

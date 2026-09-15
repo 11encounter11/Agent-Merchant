@@ -2,13 +2,11 @@
 Agent 对外服务（Service）
 
 做什么：
-- chat() / chat_stream()：组装上下文并跑 LangGraph
-- 每轮带 thread_id（默认=session_id）写入 Checkpointer
-- 若同 thread 有未完成 checkpoint，先 resume 再跑新一轮
+- chat() / chat_stream()：限流 → 上下文 → LangGraph → 会话/日志落盘
+- thread_id + Checkpointer 续跑
 
 不做什么：
-- 不定义图（graph.py）
-- 不定义节点（nodes.py）
+- 不定义图 / 节点
 """
 
 import uuid
@@ -20,8 +18,10 @@ from agent.graph import get_agent_graph
 from agent.checkpointing import thread_config, resume_if_pending
 from agent.memory.session_memory import session_memory
 from agent.memory.context_builder import ContextBuilder
+from agent.memory.rate_limit import check_rate_limit
 from agent.knowledge.knowledge_base import knowledge_base
 from agent.messages import is_placeholder_content
+from db.chat_log import append_chat_log
 
 logger = logging.getLogger(__name__)
 
@@ -46,11 +46,27 @@ def _initial_state(cleaned: str, session_id: str, context_messages: list) -> dic
     }
 
 
-async def chat(message: str, session_id: str = None, thread_id: str = None) -> dict:
-    """非流式对话（异步，支持多轮 + checkpoint 续跑）。"""
+async def chat(
+    message: str,
+    session_id: str = None,
+    thread_id: str = None,
+    client_ip: str = "",
+) -> dict:
+    """非流式对话。"""
     if session_id is None:
         session_id = str(uuid.uuid4())
     thread_id = thread_id or session_id
+
+    allowed, reason = await check_rate_limit(
+        session_id=session_id, client_ip=client_ip
+    )
+    if not allowed:
+        return {
+            "reply": reason or "请求过于频繁，请稍后再试。",
+            "session_id": session_id,
+            "thread_id": thread_id,
+            "rate_limited": True,
+        }
 
     from agent.perception import preprocess
     cleaned = preprocess(message)
@@ -61,12 +77,11 @@ async def chat(message: str, session_id: str = None, thread_id: str = None) -> d
     graph = get_agent_graph()
     cfg = thread_config(thread_id)
 
-    # 先消化未完成的断点（崩溃恢复场景）
     resumed = await resume_if_pending(graph, thread_id)
     if resumed is not None:
         logger.info(f"[Chat] 已续跑未完成线程 thread_id={thread_id}")
 
-    context_messages = _context_builder.build_context(session_id, cleaned)
+    context_messages = await _context_builder.abuild_context(session_id, cleaned)
     result = await graph.ainvoke(
         _initial_state(cleaned, session_id, context_messages),
         cfg,
@@ -81,7 +96,21 @@ async def chat(message: str, session_id: str = None, thread_id: str = None) -> d
         last = final_messages[-1]
         ai_reply = getattr(last, "content", "") or ""
 
-    session_memory.append_turn(session_id, user_input, ai_reply)
+    await session_memory.aappend_turn(session_id, user_input, ai_reply)
+    total_tokens = int((token_usage or {}).get("total_tokens") or 0)
+    await append_chat_log(
+        session_id=session_id,
+        thread_id=thread_id,
+        role="human",
+        content=user_input,
+    )
+    await append_chat_log(
+        session_id=session_id,
+        thread_id=thread_id,
+        role="ai",
+        content=ai_reply,
+        token_total=total_tokens,
+    )
 
     reply = {
         "reply": ai_reply,
@@ -90,20 +119,17 @@ async def chat(message: str, session_id: str = None, thread_id: str = None) -> d
     }
     if token_usage:
         reply["token_usage"] = token_usage
-        logger.info(f"[Chat] Token: {token_usage.get('total_tokens', 0)}")
+        logger.info(f"[Chat] Token: {total_tokens}")
     return reply
 
 
-def chat_stream(message: str, session_id: str = None, thread_id: str = None):
-    """
-    流式对话。
-
-    yield：
-    - {"type": "content", ...}
-    - {"type": "tool_call", ...}
-    - {"type": "tool_result", ...}
-    - {"type": "checkpoint", "thread_id": "..."}  （便于前端/调试对齐）
-    """
+def chat_stream(
+    message: str,
+    session_id: str = None,
+    thread_id: str = None,
+    client_ip: str = "",
+):
+    """流式对话。"""
     if session_id is None:
         session_id = str(uuid.uuid4())
     thread_id = thread_id or session_id
@@ -114,13 +140,18 @@ def chat_stream(message: str, session_id: str = None, thread_id: str = None):
         f"[ChatStream] session={session_id} thread_id={thread_id} message='{cleaned}'"
     )
 
-    context_messages = _context_builder.build_context(session_id, cleaned)
-    initial_state = _initial_state(cleaned, session_id, context_messages)
-    cfg = thread_config(thread_id)
-
     async def async_generator():
-        accumulated = ""
+        allowed, reason = await check_rate_limit(
+            session_id=session_id, client_ip=client_ip
+        )
+        if not allowed:
+            yield {"type": "content", "content": reason or "请求过于频繁，请稍后再试。"}
+            yield {"type": "rate_limited", "session_id": session_id}
+            return
+
         graph = get_agent_graph()
+        cfg = thread_config(thread_id)
+        accumulated = ""
 
         yield {"type": "checkpoint", "thread_id": thread_id}
 
@@ -131,6 +162,9 @@ def chat_stream(message: str, session_id: str = None, thread_id: str = None):
                 "thread_id": thread_id,
                 "hint": "已从断点续跑完成上一未完成任务",
             }
+
+        context_messages = await _context_builder.abuild_context(session_id, cleaned)
+        initial_state = _initial_state(cleaned, session_id, context_messages)
 
         async for chunk in graph.astream(
             initial_state, cfg, stream_mode="messages"
@@ -164,6 +198,18 @@ def chat_stream(message: str, session_id: str = None, thread_id: str = None):
                     "result": msg.content[:200],
                 }
 
-        session_memory.append_turn(session_id, cleaned, accumulated.strip())
+        await session_memory.aappend_turn(session_id, cleaned, accumulated.strip())
+        await append_chat_log(
+            session_id=session_id,
+            thread_id=thread_id,
+            role="human",
+            content=cleaned,
+        )
+        await append_chat_log(
+            session_id=session_id,
+            thread_id=thread_id,
+            role="ai",
+            content=accumulated.strip(),
+        )
 
     return async_generator()

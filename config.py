@@ -91,6 +91,16 @@ class Settings(BaseSettings):
     # 演示断点：设为 tools 时，工具执行后暂停，可用同 thread_id 续跑
     CHECKPOINT_INTERRUPT_AFTER: str = ""
 
+    # ================================================================
+    # Redis / 限流 / 对话日志（面经阶段 4）
+    # ================================================================
+    REDIS_ENABLED: bool = True
+    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_SESSION_TTL_SEC: int = 86400
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_PER_MINUTE: int = 30
+    CHAT_LOG_ENABLED: bool = True
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

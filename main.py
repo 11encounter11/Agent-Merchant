@@ -17,6 +17,8 @@ from config import settings
 from agent.logging_config import setup_logging
 from api.routes import router
 from db.database import close_pool
+from db.redis_client import close_redis
+from db.chat_log import ensure_chat_log_table
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +54,9 @@ async def lifespan(app: FastAPI):
                 checkpointer, interrupt_after=interrupt_after
             )
             logger.info(f"[Main] Checkpointer=sqlite path={db_path}")
+            await ensure_chat_log_table()
             yield
+            await close_redis()
     else:
         from langgraph.checkpoint.memory import MemorySaver
 
@@ -60,7 +64,9 @@ async def lifespan(app: FastAPI):
             MemorySaver(), interrupt_after=interrupt_after
         )
         logger.info("[Main] Checkpointer=memory（重启丢失）")
+        await ensure_chat_log_table()
         yield
+        await close_redis()
 
     await close_pool()
     logger.info("[Main] Agent 服务已关闭，资源已释放")
@@ -69,7 +75,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     description="面向外卖商家的智能经营助手 API",
-    version="0.3.0",
+    version="0.4.0",
     lifespan=lifespan,
 )
 

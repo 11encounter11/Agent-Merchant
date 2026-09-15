@@ -4,6 +4,7 @@
 做什么：
 - 存储每个商家的对话历史，实现多轮对话
 - JSON 文件持久化（data/sessions/），服务重启不丢失
+- Redis 热缓存最近轮次（可用则读/写；不可用自动降级）
 - 只存 human + ai 文本，不存 Tool 调用链
 
 不做什么：
@@ -33,6 +34,10 @@ def _ensure_dir():
 
 def _session_file(session_id: str) -> Path:
     return SESSION_DIR / f"{session_id}.json"
+
+
+def _redis_key(session_id: str) -> str:
+    return f"agent:session:{session_id}"
 
 
 def _filter_for_storage(messages: List[BaseMessage]) -> List[BaseMessage]:
@@ -71,58 +76,32 @@ def _from_dict(d: dict) -> BaseMessage:
 
 
 class SessionMemory:
-    """会话记忆管理器。"""
+    """会话记忆：文件为权威落盘，Redis 为热缓存。"""
 
     def get_history(self, session_id: str) -> List[BaseMessage]:
-        """获取指定会话的历史消息。"""
-        _ensure_dir()
-        filepath = _session_file(session_id)
-        if not filepath.exists():
-            return []
-        try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            messages = [_from_dict(m) for m in data.get("messages", [])]
-            messages = _filter_for_storage(messages)
-            return messages
-        except Exception as e:
-            logger.error(f"[SessionMemory] 读取失败: {e}")
-            return []
+        """同步读：先尝试进程内已知文件；热路径请用 aget_history。"""
+        return self._read_file(session_id)
+
+    async def aget_history(self, session_id: str) -> List[BaseMessage]:
+        """异步读：Redis → 文件 → 回填 Redis。"""
+        cached = await self._redis_get(session_id)
+        if cached is not None:
+            return cached
+        messages = self._read_file(session_id)
+        if messages:
+            await self._redis_set(session_id, messages)
+        return messages
 
     def save_history(self, session_id: str, messages: List[BaseMessage]):
-        """保存会话历史到 JSON 文件。"""
-        _ensure_dir()
-        filepath = _session_file(session_id)
+        """同步写文件（兼容旧调用）。"""
+        self._write_file(session_id, messages)
 
-        conversational = _filter_for_storage(messages)
-        truncated = conversational[-MAX_HISTORY:]
-        msg_dicts = [_to_dict(m) for m in truncated]
-
-        # 读取已有数据（保留 created_at）
-        existing = {}
-        if filepath.exists():
-            try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    existing = json.load(f)
-            except Exception:
-                pass
-
-        data = {
-            "session_id": session_id,
-            "created_at": existing.get("created_at", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-            "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "message_count": len(truncated),
-            "messages": msg_dicts,
-        }
-
-        try:
-            with open(filepath, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            logger.error(f"[SessionMemory] 保存失败: {e}")
+    async def asave_history(self, session_id: str, messages: List[BaseMessage]):
+        """异步：文件 + Redis。"""
+        self._write_file(session_id, messages)
+        await self._redis_set(session_id, messages)
 
     def append_turn(self, session_id: str, user_text: str, ai_text: str = ""):
-        """追加一轮对话并落盘。"""
         messages = list(self.get_history(session_id))
         if user_text:
             messages.append(HumanMessage(content=user_text))
@@ -130,14 +109,30 @@ class SessionMemory:
             messages.append(AIMessage(content=str(ai_text).strip()))
         self.save_history(session_id, messages)
 
+    async def aappend_turn(self, session_id: str, user_text: str, ai_text: str = ""):
+        messages = list(await self.aget_history(session_id))
+        if user_text:
+            messages.append(HumanMessage(content=user_text))
+        if ai_text and str(ai_text).strip():
+            messages.append(AIMessage(content=str(ai_text).strip()))
+        await self.asave_history(session_id, messages)
+
     def clear_history(self, session_id: str):
-        """清空指定会话历史。"""
         filepath = _session_file(session_id)
         if filepath.exists():
             filepath.unlink()
+        # 异步清 Redis 交给调用方；此处尽力同步触发不了 await
+        try:
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.create_task(self._redis_delete(session_id))
+            else:
+                loop.run_until_complete(self._redis_delete(session_id))
+        except Exception:
+            pass
 
     def list_sessions(self) -> List[dict]:
-        """列出所有会话。"""
         _ensure_dir()
         sessions = []
         for filepath in SESSION_DIR.glob("*.json"):
@@ -155,6 +150,101 @@ class SessionMemory:
         sessions.sort(key=lambda x: x["updated_at"], reverse=True)
         return sessions
 
+    # ---- 内部：文件 ----
 
-# 全局实例
+    def _read_file(self, session_id: str) -> List[BaseMessage]:
+        _ensure_dir()
+        filepath = _session_file(session_id)
+        if not filepath.exists():
+            return []
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            messages = [_from_dict(m) for m in data.get("messages", [])]
+            return _filter_for_storage(messages)
+        except Exception as e:
+            logger.error(f"[SessionMemory] 读取失败: {e}")
+            return []
+
+    def _write_file(self, session_id: str, messages: List[BaseMessage]):
+        _ensure_dir()
+        filepath = _session_file(session_id)
+        conversational = _filter_for_storage(messages)
+        truncated = conversational[-MAX_HISTORY:]
+        msg_dicts = [_to_dict(m) for m in truncated]
+
+        existing = {}
+        if filepath.exists():
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    existing = json.load(f)
+            except Exception:
+                pass
+
+        data = {
+            "session_id": session_id,
+            "created_at": existing.get(
+                "created_at", datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ),
+            "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "message_count": len(truncated),
+            "messages": msg_dicts,
+        }
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"[SessionMemory] 保存失败: {e}")
+
+    # ---- 内部：Redis ----
+
+    async def _redis_get(self, session_id: str) -> List[BaseMessage] | None:
+        try:
+            from db.redis_client import get_redis
+
+            r = await get_redis()
+            if r is None:
+                return None
+            raw = await r.get(_redis_key(session_id))
+            if not raw:
+                return None
+            data = json.loads(raw)
+            messages = [_from_dict(m) for m in data]
+            logger.debug(f"[SessionMemory] Redis 命中 session={session_id}")
+            return _filter_for_storage(messages)
+        except Exception as e:
+            logger.warning(f"[SessionMemory] Redis 读取失败: {e}")
+            return None
+
+    async def _redis_set(self, session_id: str, messages: List[BaseMessage]) -> None:
+        try:
+            from db.redis_client import get_redis
+
+            r = await get_redis()
+            if r is None:
+                return
+            conversational = _filter_for_storage(messages)[-MAX_HISTORY:]
+            payload = json.dumps(
+                [_to_dict(m) for m in conversational], ensure_ascii=False
+            )
+            await r.set(
+                _redis_key(session_id),
+                payload,
+                ex=settings.REDIS_SESSION_TTL_SEC,
+            )
+        except Exception as e:
+            logger.warning(f"[SessionMemory] Redis 写入失败: {e}")
+
+    async def _redis_delete(self, session_id: str) -> None:
+        try:
+            from db.redis_client import get_redis
+
+            r = await get_redis()
+            if r is None:
+                return
+            await r.delete(_redis_key(session_id))
+        except Exception:
+            pass
+
+
 session_memory = SessionMemory()

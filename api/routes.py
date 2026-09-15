@@ -10,7 +10,7 @@ import json
 import logging
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
 from config import settings
@@ -18,6 +18,15 @@ from schemas.chat import ChatRequest, ChatResponse
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for") or ""
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client:
+        return request.client.host or ""
+    return ""
 
 
 def _friendly_llm_error(exc: Exception) -> str:
@@ -56,7 +65,7 @@ async def root():
 
 
 @router.post("/api/agent/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, http_request: Request):
     """非流式聊天。"""
     from agent.service import chat as agent_chat
 
@@ -66,35 +75,41 @@ async def chat(request: ChatRequest):
             message=request.message,
             session_id=session_id,
             thread_id=request.thread_id or session_id,
+            client_ip=_client_ip(http_request),
         )
         return ChatResponse(
             reply=result["reply"],
             session_id=result["session_id"],
             thread_id=result.get("thread_id") or session_id,
-            success=True,
+            success=not result.get("rate_limited"),
         )
     except Exception as e:
         logger.exception("[API] chat 失败: %s", e)
         return ChatResponse(
             reply=_friendly_llm_error(e),
             session_id=session_id,
+            thread_id=request.thread_id or session_id,
             success=False,
         )
 
 
 @router.post("/api/agent/chat/stream")
-async def chat_stream(request: ChatRequest):
+async def chat_stream(request: ChatRequest, http_request: Request):
     """流式聊天（SSE）。"""
     from agent.service import chat_stream as agent_chat_stream
 
     session_id = request.session_id or str(uuid.uuid4())
     thread_id = request.thread_id or session_id
+    client_ip = _client_ip(http_request)
 
     async def event_generator():
         yield f"data: {json.dumps({'type': 'session', 'session_id': session_id, 'thread_id': thread_id}, ensure_ascii=False)}\n\n"
         try:
             async for chunk in agent_chat_stream(
-                request.message, session_id, thread_id=thread_id
+                request.message,
+                session_id,
+                thread_id=thread_id,
+                client_ip=client_ip,
             ):
                 if isinstance(chunk, dict):
                     yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
