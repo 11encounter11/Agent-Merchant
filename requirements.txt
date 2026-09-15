@@ -11,7 +11,9 @@ uvicorn[standard]>=0.30.0
 # --- LLM 相关 ---
 langchain-openai>=0.3.0
 langgraph>=0.2.0
+langgraph-checkpoint-sqlite>=2.0.0
 langchain-core>=0.3.0
+aiosqlite>=0.20.0
 
 # --- 数据库 ---
 aiomysql>=0.2.0

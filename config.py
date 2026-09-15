@@ -82,6 +82,15 @@ class Settings(BaseSettings):
     # ================================================================
     MAX_SUPERVISOR_ROUNDS: int = 6
 
+    # ================================================================
+    # Checkpointer（面经阶段 3）
+    # backend: memory | sqlite
+    # ================================================================
+    CHECKPOINT_BACKEND: str = "sqlite"
+    CHECKPOINT_SQLITE_PATH: str = "data/checkpoints.sqlite"
+    # 演示断点：设为 tools 时，工具执行后暂停，可用同 thread_id 续跑
+    CHECKPOINT_INTERRUPT_AFTER: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

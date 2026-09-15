@@ -7,7 +7,7 @@
 """
 
 import logging
-
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -18,21 +18,58 @@ from agent.logging_config import setup_logging
 from api.routes import router
 from db.database import close_pool
 
+logger = logging.getLogger(__name__)
+
+
+def _interrupt_after_list() -> list[str] | None:
+    raw = (settings.CHECKPOINT_INTERRUPT_AFTER or "").strip()
+    if not raw:
+        return None
+    return [x.strip() for x in raw.split(",") if x.strip()]
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期：启动时设置日志，关闭时释放资源。"""
+    """启动：挂 Checkpointer 并重编译图；关闭：释放资源。"""
     setup_logging(log_level=logging.INFO)
-    yield
-    # 服务关闭：释放数据库连接池
+
+    import agent.graph as graph_mod
+
+    interrupt_after = _interrupt_after_list()
+    backend = (settings.CHECKPOINT_BACKEND or "memory").lower()
+
+    if backend == "sqlite":
+        from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+
+        db_path = settings.CHECKPOINT_SQLITE_PATH
+        parent = os.path.dirname(db_path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+
+        async with AsyncSqliteSaver.from_conn_string(db_path) as checkpointer:
+            await checkpointer.setup()
+            graph_mod.agent_graph = graph_mod.build_agent_graph(
+                checkpointer, interrupt_after=interrupt_after
+            )
+            logger.info(f"[Main] Checkpointer=sqlite path={db_path}")
+            yield
+    else:
+        from langgraph.checkpoint.memory import MemorySaver
+
+        graph_mod.agent_graph = graph_mod.build_agent_graph(
+            MemorySaver(), interrupt_after=interrupt_after
+        )
+        logger.info("[Main] Checkpointer=memory（重启丢失）")
+        yield
+
     await close_pool()
-    logging.getLogger(__name__).info("[Main] Agent 服务已关闭，资源已释放")
+    logger.info("[Main] Agent 服务已关闭，资源已释放")
 
 
 app = FastAPI(
     title=settings.APP_NAME,
     description="面向外卖商家的智能经营助手 API",
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan,
 )
 

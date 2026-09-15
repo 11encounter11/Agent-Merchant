@@ -65,10 +65,12 @@ async def chat(request: ChatRequest):
         result = await agent_chat(
             message=request.message,
             session_id=session_id,
+            thread_id=request.thread_id or session_id,
         )
         return ChatResponse(
             reply=result["reply"],
             session_id=result["session_id"],
+            thread_id=result.get("thread_id") or session_id,
             success=True,
         )
     except Exception as e:
@@ -86,11 +88,14 @@ async def chat_stream(request: ChatRequest):
     from agent.service import chat_stream as agent_chat_stream
 
     session_id = request.session_id or str(uuid.uuid4())
+    thread_id = request.thread_id or session_id
 
     async def event_generator():
-        yield f"data: {json.dumps({'type': 'session', 'session_id': session_id}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'type': 'session', 'session_id': session_id, 'thread_id': thread_id}, ensure_ascii=False)}\n\n"
         try:
-            async for chunk in agent_chat_stream(request.message, session_id):
+            async for chunk in agent_chat_stream(
+                request.message, session_id, thread_id=thread_id
+            ):
                 if isinstance(chunk, dict):
                     yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
                 else:
