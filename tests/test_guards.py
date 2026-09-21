@@ -1,4 +1,4 @@
-"""阶段 1 护栏单测（不依赖 LLM / DB）。"""
+"""护栏单测（不依赖 LLM / DB）。"""
 
 import asyncio
 

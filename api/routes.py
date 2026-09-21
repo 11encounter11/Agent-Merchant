@@ -15,6 +15,7 @@ from fastapi.responses import StreamingResponse
 
 from config import settings
 from schemas.chat import ChatRequest, ChatResponse
+from agent.observability import tracing_ready
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ async def health_check():
         "status": "ok",
         "service": settings.APP_NAME,
         "version": "0.1.0",
+        "langfuse": tracing_ready(),
     }
 
 
@@ -82,6 +84,7 @@ async def chat(request: ChatRequest, http_request: Request):
             session_id=result["session_id"],
             thread_id=result.get("thread_id") or session_id,
             success=not result.get("rate_limited"),
+            rag_hits=result.get("rag_hits") or None,
         )
     except Exception as e:
         logger.exception("[API] chat 失败: %s", e)

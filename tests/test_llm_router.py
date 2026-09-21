@@ -1,6 +1,12 @@
-"""阶段 5：模型路由（不调真实 LLM）。"""
+"""模型路由（不调真实 LLM）。"""
 
-from agent.llm import resolve_llm_tier, model_for_tier, inspect_turn
+from agent.llm import (
+    resolve_llm_tier,
+    model_for_tier,
+    inspect_turn,
+    is_llm_connect_error,
+    _make_chat,
+)
 from agent.nodes import perceive, route_after_dispatcher
 from config import settings
 
@@ -58,3 +64,24 @@ def test_inspect_unknown_falls_back_large():
     turn = inspect_turn("随便聊聊天气之外的事啊")
     assert turn["intent"]["intent"] == "unknown"
     assert turn["llm_tier"] == "large"
+
+
+def test_connect_error_detection():
+    assert is_llm_connect_error(ConnectionError("Connection error."))
+    assert is_llm_connect_error(Exception("Connection error."))
+    assert is_llm_connect_error(Exception("[SSL: UNEXPECTED_EOF_WHILE_READING] EOF"))
+    assert not is_llm_connect_error(ValueError("bad tool args"))
+
+
+def test_http_client_skips_env_proxy_by_default():
+    assert settings.LLM_HTTP_TRUST_ENV is False
+    llm = _make_chat("dummy-model")
+    client = getattr(llm, "http_client", None) or getattr(llm, "client", None)
+    # langchain-openai 把 httpx.Client 挂在 ChatOpenAI.http_client 或 openai client
+    trust = getattr(llm, "http_client", None)
+    if trust is not None:
+        assert trust.trust_env is False
+    else:
+        inner = getattr(llm.client, "_client", None)
+        assert inner is not None
+        assert inner.trust_env is False

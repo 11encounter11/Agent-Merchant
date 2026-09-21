@@ -6,7 +6,7 @@
 
 说明：
 - 使用 MemorySaver + interrupt_after=[\"tools\"] 的玩具调度，不调真实 LLM
-- 对应面试话术：thread_id 标识一次执行线程；checkpoint 落盘后可从 next 节点续跑
+- thread_id 标识一次执行线程；checkpoint 落盘后可从 next 节点续跑
 """
 
 from __future__ import annotations
@@ -57,7 +57,7 @@ def build_demo():
 
 async def main():
     app = build_demo()
-    thread_id = "interview-demo-thread"
+    thread_id = "checkpoint-demo-thread"
     cfg = thread_config(thread_id)
 
     print("=== 1) 跑到 tools 后中断（模拟进程崩溃前最后一次落盘）===")

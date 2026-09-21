@@ -19,6 +19,7 @@ from api.routes import router
 from db.database import close_pool
 from db.redis_client import close_redis
 from db.chat_log import ensure_chat_log_table
+from agent.observability import flush_tracing
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ async def lifespan(app: FastAPI):
             logger.info(f"[Main] Checkpointer=sqlite path={db_path}")
             await ensure_chat_log_table()
             yield
+            flush_tracing()
             await close_redis()
     else:
         from langgraph.checkpoint.memory import MemorySaver
@@ -66,6 +68,7 @@ async def lifespan(app: FastAPI):
         logger.info("[Main] Checkpointer=memory（重启丢失）")
         await ensure_chat_log_table()
         yield
+        flush_tracing()
         await close_redis()
 
     await close_pool()

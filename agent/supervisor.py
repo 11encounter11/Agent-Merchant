@@ -1,5 +1,5 @@
 """
-Supervisor 调度（面经阶段 2）
+Supervisor 调度
 
 模式：Supervisor–Worker（非 Peer 全网状）
 - Supervisor 只负责「下一步派谁」，不查库、不写长文

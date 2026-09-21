@@ -1,5 +1,5 @@
 """
-面经阶段 5 最小评测（不启动服务、不调 LLM）。
+离线评测（不启动服务、不调 LLM）。
 
 检查：意图分类、小/大模型路由、工具门禁、提示注入、边界拒绝。
 输出对错表，并写入 eval/results/。
@@ -25,7 +25,7 @@ from agent.llm import inspect_turn
 from agent.nodes import route_after_dispatcher
 from agent.security import is_tool_allowed
 
-DATASET = Path(__file__).resolve().parent / "interview5_cases.json"
+DATASET = Path(__file__).resolve().parent / "cases.json"
 RESULT_DIR = Path(__file__).resolve().parent / "results"
 
 
@@ -101,7 +101,7 @@ def print_table(rows: list[dict]) -> None:
 def save(rows: list[dict]) -> Path:
     RESULT_DIR.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = RESULT_DIR / f"interview5_{ts}.json"
+    path = RESULT_DIR / f"eval_{ts}.json"
     passed = sum(1 for r in rows if r["pass"])
     payload = {
         "timestamp": ts,
@@ -116,7 +116,7 @@ def save(rows: list[dict]) -> Path:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="面经阶段 5 最小评测")
+    parser = argparse.ArgumentParser(description="离线评测：意图 / 路由 / 门禁 / 注入 / 边界")
     parser.add_argument("--ids", help="按 ID 过滤，逗号分隔")
     args = parser.parse_args()
 
@@ -129,7 +129,7 @@ def main() -> int:
         return 1
 
     print("=" * 60)
-    print("  面经阶段 5 最小评测（离线，不调 LLM）")
+    print("  离线评测（不调 LLM）")
     print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 60)
 

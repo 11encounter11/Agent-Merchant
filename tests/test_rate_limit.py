@@ -1,4 +1,4 @@
-"""阶段 4：限流（本地降级）单测，不依赖真实 Redis/MySQL。"""
+"""限流（本地降级）单测，不依赖真实 Redis/MySQL。"""
 
 import asyncio
 

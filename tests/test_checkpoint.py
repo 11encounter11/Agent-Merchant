@@ -1,4 +1,4 @@
-"""阶段 3：Checkpointer + thread_id 断点续跑（MemorySaver，不依赖 Sqlite/LLM）。"""
+"""Checkpointer + thread_id 断点续跑（MemorySaver，不依赖 Sqlite/LLM）。"""
 
 import asyncio
 
@@ -8,6 +8,25 @@ from langgraph.graph import StateGraph, START, END
 
 from agent.checkpointing import thread_config, resume_if_pending, get_thread_snapshot
 from agent.graph import build_agent_graph
+
+class _Boom(Exception):
+    pass
+
+
+def _build_failing_graph(checkpointer):
+    def step_a(s: _S):
+        return {"n": s["n"] + 1}
+
+    def step_b(s: _S):
+        raise _Boom("connection error")
+
+    g = StateGraph(_S)
+    g.add_node("a", step_a)
+    g.add_node("b", step_b)
+    g.add_edge(START, "a")
+    g.add_edge("a", "b")
+    g.add_edge("b", END)
+    return g.compile(checkpointer=checkpointer)
 
 
 class _S(TypedDict):
@@ -65,3 +84,27 @@ def test_build_agent_graph_with_memory_checkpointer():
     nodes = set(g.get_graph().nodes)
     assert "supervisor" in nodes
     assert "reflect" in nodes
+
+
+def test_resume_skips_failed_node_instead_of_blocking():
+    async def run():
+        cp = MemorySaver()
+        app = _build_failing_graph(cp)
+        tid = "failed-thread"
+        cfg = thread_config(tid)
+
+        try:
+            await app.ainvoke({"n": 0}, cfg)
+        except _Boom:
+            pass
+
+        snap = await get_thread_snapshot(app, tid)
+        assert snap.next == ("b",)
+
+        result = await resume_if_pending(app, tid)
+        assert result is None
+
+        snap2 = await get_thread_snapshot(app, tid)
+        assert not snap2.next
+
+    asyncio.run(run())

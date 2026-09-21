@@ -46,3 +46,5 @@ class ChatResponse(BaseModel):
     session_id: str
     thread_id: Optional[str] = None
     success: bool = True
+    # RAG 命中来源（前端可忽略）
+    rag_hits: Optional[list] = None

@@ -1,4 +1,4 @@
-"""阶段 4：会话记忆文件路径（不依赖 Redis）。"""
+"""会话记忆文件路径（不依赖 Redis）。"""
 
 import uuid
 from pathlib import Path

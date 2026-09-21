@@ -1,7 +1,7 @@
 """
 LangGraph 图编排（Graph）
 
-流程（阶段 2 Supervisor–Worker + 阶段 3 Checkpointer）：
+流程：
     perceive → dispatcher → supervisor ⇄ workers → call_llm → reflect → END
 
 编译时注入 checkpointer；thread_id 由 service 传入 RunnableConfig。
@@ -13,7 +13,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START, END
 
 from agent.state import AgentState
-from agent.nodes import (
+from agent.workers import (
     perceive,
     dispatcher,
     supervisor,

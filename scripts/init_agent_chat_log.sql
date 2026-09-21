@@ -1,4 +1,4 @@
--- Agent 对话日志表（面经阶段 4）
+-- Agent 对话日志表
 -- 可手动执行：mysql -u root -p sky_take_out < scripts/init_agent_chat_log.sql
 -- 服务启动时也会 ensure_chat_log_table() 自动建表
 

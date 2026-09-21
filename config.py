@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # 路由不准（置信度低于阈值）时回退大模型
     LLM_ROUTE_FALLBACK_TO_LARGE: bool = True
     LLM_ROUTE_CONFIDENCE_MIN: float = 0.5
+    # False：LLM HTTP 不走系统/环境代理（智谱等国内接口被 Clash 劫持时会 SSL EOF）
+    # 若模型必须走代理才能访问，设为 true
+    LLM_HTTP_TRUST_ENV: bool = False
 
     # ================================================================
     # Embedding 配置（用于 RAG 知识库向量化）
@@ -36,6 +39,10 @@ class Settings(BaseSettings):
     EMBEDDING_API_KEY: str = ""
     EMBEDDING_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     EMBEDDING_MODEL: str = "text-embedding-v3"
+    # 短 JSON 不切；超过该字数才切片
+    RAG_CHUNK_SIZE: int = 500
+    RAG_CHUNK_OVERLAP: int = 50
+    RAG_TOP_K: int = 3
 
     # ================================================================
     # MySQL 数据库（苍穹外卖 sky_take_out）
@@ -74,7 +81,7 @@ class Settings(BaseSettings):
     FORECAST_CONFIDENCE: float = 0.8
 
     # ================================================================
-    # 工程护栏（面经阶段 1：防死循环 / 预算 / 工具稳健性）
+    # 工程护栏（防死循环 / 预算 / 工具稳健性）
     # ================================================================
     MAX_TOOL_STEPS: int = 4
     TOKEN_BUDGET: int = 12000
@@ -83,12 +90,12 @@ class Settings(BaseSettings):
     IDEMPOTENCY_TTL_SEC: int = 600
 
     # ================================================================
-    # Supervisor（面经阶段 2）
+    # Supervisor
     # ================================================================
     MAX_SUPERVISOR_ROUNDS: int = 6
 
     # ================================================================
-    # Checkpointer（面经阶段 3）
+    # Checkpointer
     # backend: memory | sqlite
     # ================================================================
     CHECKPOINT_BACKEND: str = "sqlite"
@@ -97,7 +104,7 @@ class Settings(BaseSettings):
     CHECKPOINT_INTERRUPT_AFTER: str = ""
 
     # ================================================================
-    # Redis / 限流 / 对话日志（面经阶段 4）
+    # Redis / 限流 / 对话日志
     # ================================================================
     REDIS_ENABLED: bool = True
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -107,9 +114,17 @@ class Settings(BaseSettings):
     CHAT_LOG_ENABLED: bool = True
 
     # ================================================================
-    # 安全（面经阶段 5：注入拦截 / 工具门禁）
+    # 安全（注入拦截 / 工具门禁）
     # ================================================================
     SECURITY_INJECTION_ENABLED: bool = True
+
+    # ================================================================
+    # Langfuse（观测：Callback 挂到图运行配置，不改节点）
+    # ================================================================
+    LANGFUSE_ENABLED: bool = True
+    LANGFUSE_PUBLIC_KEY: str = ""
+    LANGFUSE_SECRET_KEY: str = ""
+    LANGFUSE_BASE_URL: str = "https://cloud.langfuse.com"
 
     class Config:
         env_file = ".env"

@@ -16,16 +16,35 @@ from langchain_core.messages import AIMessage, ToolMessage
 
 from agent.graph import get_agent_graph
 from agent.checkpointing import thread_config, resume_if_pending
+from agent.llm import inspect_turn
 from agent.memory.session_memory import session_memory
 from agent.memory.context_builder import ContextBuilder
 from agent.memory.rate_limit import check_rate_limit
-from agent.knowledge.knowledge_base import knowledge_base
+from agent.knowledge.knowledge_base import knowledge_base, compact_hits
 from agent.messages import is_placeholder_content
 from db.chat_log import append_chat_log
 
 logger = logging.getLogger(__name__)
 
 _context_builder = ContextBuilder(knowledge_base=knowledge_base)
+
+
+def _run_config(thread_id: str, session_id: str, user_input: str = "") -> dict:
+    """图运行配置：checkpoint thread + Langfuse session/tags。"""
+    tags = ["sky-agent"]
+    extra = {}
+    if user_input:
+        turn = inspect_turn(user_input)
+        intent = (turn.get("intent") or {}).get("intent") or "unknown"
+        tier = turn.get("llm_tier") or "large"
+        tags.extend([intent, tier])
+        extra = {"intent": intent, "llm_tier": tier}
+    return thread_config(
+        thread_id,
+        session_id=session_id,
+        tags=tags,
+        metadata=extra,
+    )
 
 
 def _initial_state(cleaned: str, session_id: str, context_messages: list) -> dict:
@@ -45,6 +64,7 @@ def _initial_state(cleaned: str, session_id: str, context_messages: list) -> dic
         "supervisor_plan": [],
         "llm_tier": "large",
         "security": {},
+        "rag_hits": [],
     }
 
 
@@ -77,17 +97,16 @@ async def chat(
     )
 
     graph = get_agent_graph()
-    cfg = thread_config(thread_id)
+    cfg = _run_config(thread_id, session_id, cleaned)
 
-    resumed = await resume_if_pending(graph, thread_id)
+    resumed = await resume_if_pending(graph, thread_id, session_id=session_id)
     if resumed is not None:
         logger.info(f"[Chat] 已续跑未完成线程 thread_id={thread_id}")
 
-    context_messages = await _context_builder.abuild_context(session_id, cleaned)
-    result = await graph.ainvoke(
-        _initial_state(cleaned, session_id, context_messages),
-        cfg,
-    )
+    context_messages, rag_hits = await _context_builder.abuild_context(session_id, cleaned)
+    initial = _initial_state(cleaned, session_id, context_messages)
+    initial["rag_hits"] = rag_hits
+    result = await graph.ainvoke(initial, cfg)
 
     final_messages = result.get("messages", [])
     user_input = result.get("user_input", cleaned)
@@ -118,6 +137,7 @@ async def chat(
         "reply": ai_reply,
         "session_id": session_id,
         "thread_id": thread_id,
+        "rag_hits": compact_hits(result.get("rag_hits") or rag_hits),
     }
     if token_usage:
         reply["token_usage"] = token_usage
@@ -152,12 +172,12 @@ def chat_stream(
             return
 
         graph = get_agent_graph()
-        cfg = thread_config(thread_id)
+        cfg = _run_config(thread_id, session_id, cleaned)
         accumulated = ""
 
         yield {"type": "checkpoint", "thread_id": thread_id}
 
-        resumed = await resume_if_pending(graph, thread_id)
+        resumed = await resume_if_pending(graph, thread_id, session_id=session_id)
         if resumed is not None:
             yield {
                 "type": "checkpoint_resumed",
@@ -165,8 +185,11 @@ def chat_stream(
                 "hint": "已从断点续跑完成上一未完成任务",
             }
 
-        context_messages = await _context_builder.abuild_context(session_id, cleaned)
+        context_messages, rag_hits = await _context_builder.abuild_context(session_id, cleaned)
         initial_state = _initial_state(cleaned, session_id, context_messages)
+        initial_state["rag_hits"] = rag_hits
+        if rag_hits:
+            yield {"type": "rag", "hits": compact_hits(rag_hits)}
 
         async for chunk in graph.astream(
             initial_state, cfg, stream_mode="messages"

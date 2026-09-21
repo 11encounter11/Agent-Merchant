@@ -1,5 +1,5 @@
 """
-工程护栏（面经阶段 1）
+工程护栏
 
 做什么：
 - 最大工具步数 / token 预算判断
@@ -166,5 +166,6 @@ def guard_user_message(reason: str) -> str:
             "已停止继续调用模型，下面基于已有信息作答。"
         ),
         "tool_args_invalid": "部分工具参数不合法，已跳过无效调用。",
+        "llm_unavailable": "模型服务暂时连不上，请稍后再试。",
     }
     return mapping.get(reason, f"本轮已触发护栏（{reason}），停止继续执行。")

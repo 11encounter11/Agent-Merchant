@@ -1,5 +1,5 @@
 """
-Redis 客户端（面经阶段 4）
+Redis 客户端
 
 做什么：
 - 懒连接 asyncio Redis
@@ -43,6 +43,7 @@ async def get_redis():
             decode_responses=True,
             socket_connect_timeout=1.5,
             socket_timeout=1.5,
+            protocol=2,  # 兼容无 HELLO 的老 Redis（Windows 3.x）
         )
         await client.ping()
         _redis = client

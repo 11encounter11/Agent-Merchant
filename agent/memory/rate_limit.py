@@ -1,5 +1,5 @@
 """
-限流（面经阶段 4）
+限流
 
 固定窗口：每分钟最多 N 次（按 session_id 或 ip）。
 优先 Redis INCR + EXPIRE；无 Redis 时用进程内字典（单机演示够用）。

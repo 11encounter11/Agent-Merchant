@@ -1,7 +1,7 @@
 """
-对话日志表 agent_chat_log（面经阶段 4）
+对话日志表 agent_chat_log
 
-索引设计（面试可讲）：
+索引设计：
 - 适合：INDEX(session_id, created_at) —— 按会话拉历史
 - 适合：INDEX(created_at) —— 按时间清理/统计
 - 不适合：对 content（MEDIUMTEXT）建整列索引 —— 体积大、区分度用途弱、写入成本高
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS agent_chat_log (
     INDEX idx_session_created (session_id, created_at),
     INDEX idx_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-COMMENT='Agent 对话日志（面经：索引示范）';
+COMMENT='Agent 对话日志';
 """
 
 
