@@ -2,33 +2,35 @@
 
 > 给 Cursor / AI：**不要扫全库**。按本文继续。
 > 回答只按产品与工程能力描述。
-> 旧叙事（13 查询 Tool、接单主线）以**代码为准**；`README.md` / `CONTEXT.md` 部分过时。
+> 旧叙事已归档（`docs/_archive/`）；**权威文档 = `docs/REDESIGN/`**，与代码冲突时以代码为准并回写 REDESIGN。
 
 ---
 
-## 移交快照（2026-09-15）
+## 移交快照（2026-09-21）
 
 | 项 | 状态 |
 |----|------|
 | 产品 | 管理端**商家经营顾问**（查数→诊断→建议），端口 **8100** |
 | 主链路 | **已完成**（analyst 真调工具 + JSON 知识注入 + 顾问文案） |
-| 工程能力 | 护栏 / Supervisor / Checkpointer / Redis+日志 / 路由+安全+评测 / RAG 来源可观测 / Langfuse（未配 Key 则跳过） |
-| **下一个该做** | Skill / SSE agent 事件 / UI（可穿插） |
-| Git | 本地 `master` 已提交；**未配置 origin，未 push** |
-| 前端欢迎语 | `admin-web` **不一定在本仓库**；顾问文案改过 `index.vue`，若另仓需自行提交 |
+| 工程能力 | 护栏 / Supervisor / Checkpointer / Redis+日志 / 路由+安全+评测 / RAG 来源可观测 / Langfuse / **Bearer 鉴权 + CORS 白名单 + 限流防绕过 + 输出泄露检测** |
+| **还债进度** | **B0 安全 ✅ B1 测试地基 ✅ B2 单一真值 ✅ B3 健壮性 ✅ B4 清死代码 ✅ B5 文档收口 ✅**（明细 `docs/REDESIGN/04`） |
+| **下一个该做** | **B6 功能增强**：merchant_id 商家隔离（已裁决做）、SSE 事件类型化、/resume、配置后台、Skill/UI |
+| 测试基线 | `pytest -q` **104 passed**；`eval/run_eval.py` 15/15；测试依赖在 `requirements-dev.txt` |
+| Git | 本地 `master` 已提交；**未配置 origin，未 push**（推送需先 `git remote add`） |
+| 前端 | `admin-web` 不在本仓库；配置 `AGENT_API_TOKEN` 后前端 `/api/*` 需带 Bearer 头 |
 
 ### 最近本地提交（由新到旧）
 
 | Commit | 说明 |
 |--------|------|
-| （待提交） | 拆 `nodes.py` → `agent/workers/`（一节点一文件，不改行为） |
-| （待提交） | RAG 命中来源可观测 + 长文切片 |
-| `457449f` | 模型路由 + 注入/门禁 + 最小评测 |
-| `a2828d5` | Redis 会话/限流 + MySQL agent_chat_log |
-| `1ed28d8` | Checkpointer + thread_id |
-| `f830868` | Supervisor–Worker |
-| `33a2a30` | 工程护栏 |
-| `cc6e43a` | LangGraph 经营顾问闭环 |
+| （本批） | B5 文档收口：README 重写、过时文档归档加横幅、AGENTS.md 快照更新 |
+| `72286bd` | B4 清死代码：删 nodes 转发层/骨架/死配置，阈值接线 |
+| `4f917bb` | B3 健壮性：护栏留痕/限流前置/幂等 Redis/懒加载/图单例 R1–R10 |
+| `63b41b5` | B2 单一真值：constants/节假日 JSON/成本系数/版本号 |
+| `5e7a86e` | B0 安全止血：Bearer/CORS/限流防绕过/泄露检测/移除源码口令 |
+| `f9873ef` | B1 测试地基：pytest 配置+冒烟 29 例+monkeypatch 改造 |
+| `e6c76e6` | REDESIGN 文档驱动基线（01–05 + BUGFIX_LOG） |
+| `31ecd46` | 基线快照：节点拆分 workers + RAG 可观测 + Langfuse |
 
 ---
 
@@ -64,10 +66,11 @@ perceive → dispatcher
 |------|------|------|
 | 图 | `agent/graph.py` | 只连线；Checkpointer 编译；`get_agent_graph()` |
 | 调度 | `agent/supervisor.py` | 规则 Supervisor–Worker |
-| 节点 | `agent/workers/` | 一节点一文件；`nodes.py` 仅转发（测试旧 import） |
+| 节点 | `agent/workers/` | 一节点一文件（nodes.py 转发层已删） |
+| 共享常量 | `agent/constants.py` | 单一真值（边界词/简单意图集） |
 | 护栏 | `agent/guards.py` | 步数/token/超时重试/幂等 |
 | LLM 路由 | `agent/llm.py` | 小/大模型；`inspect_turn` |
-| 安全 | `agent/security.py` | 注入拦截/降权 + 工具门禁 |
+| 安全 | `agent/security.py` | 注入拦截/降权 + 工具门禁；`reflection.py` 输出泄露检测；`routes.py` Bearer 鉴权 |
 | Checkpoint | `agent/checkpointing.py` + `main.py` lifespan | Sqlite 默认 |
 | 会话 | `agent/memory/session_memory.py` | 文件权威 + Redis 热缓存 |
 | 限流 | `agent/memory/rate_limit.py` | Redis 或本地窗口 |
@@ -84,9 +87,9 @@ Tool：**11 个**（analysis + business + external），见 `agent/tools/__init_
 |----|--------|------|
 | 经营顾问主链路 | 查数 → 诊断 → 建议 | **已完成** |
 | Langfuse | Callback 挂到图运行配置 | **已完成**（无 Key 跳过） |
+| 还债 B0–B5 | 安全/测试/真值/健壮/清码/文档 | **已完成**（见 `docs/REDESIGN/04` 批次表） |
 | Wiki / LlamaIndex | 有长文再考虑 | 默认跳过 |
-| Skill、SSE agent 事件、UI | 可穿插 | **下一窗可做** |
-| 节点拆分 | 一节点一文件，graph 只连线 | **已完成** |
+| B6：merchant_id 隔离、SSE 事件契约、/resume、配置后台、Skill/UI | 功能增强 | **下一批** |
 
 ## 出问题改哪个文件
 
