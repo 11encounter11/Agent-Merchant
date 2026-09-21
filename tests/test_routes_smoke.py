@@ -57,16 +57,45 @@ def test_chat_stream_events(monkeypatch):
     async def fake_stream(message, session_id, thread_id=None, client_ip=None):
         async def gen():
             yield "你"
-            yield "好"
+            yield {"type": "rag", "hits": []}
         return gen()
 
     monkeypatch.setattr(agent_service, "chat_stream", fake_stream)
     resp = client.post("/api/agent/chat/stream", json={"message": "hi", "session_id": "smoke-s"})
     assert resp.status_code == 200
     text = resp.text
-    assert '"type": "session"' in text
-    assert '"type": "content"' in text
-    assert '"type": "done"' in text
+    assert "event: session" in text
+    assert "event: content" in text and '"type": "content"' in text
+    assert "event: rag" in text
+    assert "event: done" in text
+
+
+def test_chat_stream_error_event_not_disguised(monkeypatch):
+    async def failing_stream(message, session_id, thread_id=None, client_ip=None):
+        async def gen():
+            raise RuntimeError("401 invalid_api_key")
+        return gen()
+
+    monkeypatch.setattr(agent_service, "chat_stream", failing_stream)
+    text = client.post("/api/agent/chat/stream", json={"message": "x"}).text
+    assert "event: error" in text
+    assert "event: done" in text
+
+
+def test_chat_resume_endpoint(monkeypatch):
+    async def fake_resume(thread_id: str, session_id: str = ""):
+        return {"resumed": True, "reply": "续跑结果", "message": "", "session_id": session_id or thread_id, "thread_id": thread_id}
+
+    monkeypatch.setattr(agent_service, "resume_thread", fake_resume)
+    resp = client.post("/api/agent/chat/resume", json={"thread_id": "t-1"})
+    body = resp.json()
+    assert resp.status_code == 200 and body["resumed"] is True and body["reply"] == "续跑结果"
+
+
+def test_chat_resume_requires_token(monkeypatch):
+    monkeypatch.setattr("api.routes.settings.AGENT_API_TOKEN", "secret")
+    resp = client.post("/api/agent/chat/resume", json={"thread_id": "t-1"})
+    assert resp.status_code == 401
 
 
 def test_sessions_list():

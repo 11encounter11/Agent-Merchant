@@ -145,6 +145,33 @@ async def chat(
     return reply
 
 
+async def resume_thread(thread_id: str, session_id: str = "") -> dict:
+    """B6b：显式续跑上次未到 END 的线程；无断点或已完成则返回提示。"""
+    sid = session_id or thread_id
+    graph = get_agent_graph()
+    result = await resume_if_pending(graph, thread_id, session_id=sid)
+    if result is None:
+        return {"resumed": False, "message": "没有待恢复的断点", "session_id": sid, "thread_id": thread_id}
+
+    reply = ""
+    for m in reversed(result.get("messages") or []):
+        if (
+            isinstance(m, AIMessage)
+            and m.content
+            and not getattr(m, "tool_calls", None)
+            and not is_placeholder_content(str(m.content))
+        ):
+            reply = str(m.content)
+            break
+
+    if reply:
+        await session_memory.aappend_turn(sid, "", reply)
+        await append_chat_log(session_id=sid, thread_id=thread_id, role="ai", content=reply)
+
+    logger.info(f"[Resume] thread_id={thread_id} 续跑完成 reply_len={len(reply)}")
+    return {"resumed": True, "reply": reply, "session_id": sid, "thread_id": thread_id}
+
+
 async def chat_stream(
     message: str,
     session_id: str = None,

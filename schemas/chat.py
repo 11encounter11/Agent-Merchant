@@ -48,3 +48,20 @@ class ChatResponse(BaseModel):
     success: bool = True
     # RAG 命中来源（前端可忽略）
     rag_hits: Optional[list] = None
+
+
+class ResumeRequest(BaseModel):
+    """B6b 断点恢复请求：显式续跑上次未到 END 的线程。"""
+
+    thread_id: str
+    session_id: Optional[str] = None
+
+
+class ResumeResponse(BaseModel):
+    """断点恢复响应。"""
+
+    resumed: bool
+    reply: str = ""
+    message: str = ""
+    session_id: str = ""
+    thread_id: str = ""

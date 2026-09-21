@@ -15,11 +15,16 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from config import settings
-from schemas.chat import ChatRequest, ChatResponse
+from schemas.chat import ChatRequest, ChatResponse, ResumeRequest, ResumeResponse
 from agent.observability import tracing_ready
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def _sse(event: str, data: dict) -> str:
+    """B6b：SSE 帧带 event: 类型；data 内保留 type 字段兼容旧前端。"""
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
 def require_auth(authorization: str = Header(default="")) -> None:
@@ -119,7 +124,7 @@ async def chat_stream(request: ChatRequest, http_request: Request, _auth: None =
     client_ip = _client_ip(http_request)
 
     async def event_generator():
-        yield f"data: {json.dumps({'type': 'session', 'session_id': session_id, 'thread_id': thread_id}, ensure_ascii=False)}\n\n"
+        yield _sse("session", {"type": "session", "session_id": session_id, "thread_id": thread_id})
         try:
             stream = await agent_chat_stream(
                 request.message,
@@ -129,19 +134,37 @@ async def chat_stream(request: ChatRequest, http_request: Request, _auth: None =
             )
             async for chunk in stream:
                 if isinstance(chunk, dict):
-                    yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+                    yield _sse(chunk.get("type") or "content", chunk)
                 else:
-                    yield f"data: {json.dumps({'type': 'content', 'content': chunk}, ensure_ascii=False)}\n\n"
-            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+                    yield _sse("content", {"type": "content", "content": chunk})
+            yield _sse("done", {"type": "done"})
         except Exception as e:
             logger.exception("[API] chat_stream 失败: %s", e)
-            yield f"data: {json.dumps({'type': 'content', 'content': _friendly_llm_error(e)}, ensure_ascii=False)}\n\n"
-            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+            yield _sse("error", {"type": "error", "message": _friendly_llm_error(e)})
+            yield _sse("done", {"type": "done"})
 
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
     )
+
+
+@router.post("/api/agent/chat/resume", response_model=ResumeResponse)
+async def chat_resume(request: ResumeRequest, _auth: None = Depends(require_auth)):
+    """显式恢复断点线程（配合 CHECKPOINT_INTERRUPT_AFTER 演示 / 上次中断的会话）。"""
+    from agent.service import resume_thread
+
+    try:
+        result = await resume_thread(thread_id=request.thread_id, session_id=request.session_id or "")
+        return ResumeResponse(**result)
+    except Exception as e:
+        logger.exception("[API] chat_resume 失败: %s", e)
+        return ResumeResponse(
+            resumed=False,
+            message=_friendly_llm_error(e),
+            session_id=request.session_id or request.thread_id,
+            thread_id=request.thread_id,
+        )
 
 
 @router.get("/api/agent/sessions")
