@@ -13,9 +13,9 @@
 | 产品 | 管理端**商家经营顾问**（查数→诊断→建议），端口 **8100** |
 | 主链路 | **已完成**（analyst 真调工具 + JSON 知识注入 + 顾问文案） |
 | 工程能力 | 护栏 / Supervisor / Checkpointer / Redis+日志 / 路由+安全+评测 / RAG 来源可观测 / Langfuse / **Bearer 鉴权 + CORS 白名单 + 限流防绕过 + 输出泄露检测** |
-| **还债进度** | **B0 安全 ✅ B1 测试地基 ✅ B2 单一真值 ✅ B3 健壮性 ✅ B4 清死代码 ✅ B5 文档收口 ✅**（明细 `docs/REDESIGN/04`） |
-| **下一个该做** | **B6 功能增强**：merchant_id 商家隔离（已裁决做）、SSE 事件类型化、/resume、配置后台、Skill/UI |
-| 测试基线 | `pytest -q` **104 passed**；`eval/run_eval.py` 15/15；测试依赖在 `requirements-dev.txt` |
+| **还债进度** | **B0 ✅ B1 ✅ B2 ✅ B3 ✅ B4 ✅ B5 ✅ B6(a–d) ✅ + P1/P3/P5 ✅ —— 还债计划全部完成**（明细 `docs/REDESIGN/04`） |
+| **下一个该做** | admin-web 前端适配（SSE `event:` 类型/error 事件/点赞点踩按钮/Token 头）；可选：加分项 2–7、Skill |
+| 测试基线 | `pytest -q` **125 passed**；`eval/run_eval.py` 15/15；商家隔离/反馈表已活库验证 |
 | Git | 本地 `master` 已提交；**未配置 origin，未 push**（推送需先 `git remote add`） |
 | 前端 | `admin-web` 不在本仓库；配置 `AGENT_API_TOKEN` 后前端 `/api/*` 需带 Bearer 头 |
 
@@ -23,14 +23,15 @@
 
 | Commit | 说明 |
 |--------|------|
-| （本批） | B5 文档收口：README 重写、过时文档归档加横幅、AGENTS.md 快照更新 |
+| （本批） | 收尾：requirements 锁上界、删坏脚本、.env.example 补缺、文档终检 |
+| `88958c1` | B6c+B6d：配置后台 1/2 级 + 对话反馈闭环（agent_feedback） |
+| `af2fbff` | B6b：SSE 事件类型化 + /resume 断点恢复端点 |
+| `f46869d` | B6a：merchant_id 商家隔离（迁移已执行、活库验证） |
+| `4871a02` | B5 文档收口：归档/横幅/README 重写/快照更新 |
 | `72286bd` | B4 清死代码：删 nodes 转发层/骨架/死配置，阈值接线 |
 | `4f917bb` | B3 健壮性：护栏留痕/限流前置/幂等 Redis/懒加载/图单例 R1–R10 |
 | `63b41b5` | B2 单一真值：constants/节假日 JSON/成本系数/版本号 |
 | `5e7a86e` | B0 安全止血：Bearer/CORS/限流防绕过/泄露检测/移除源码口令 |
-| `f9873ef` | B1 测试地基：pytest 配置+冒烟 29 例+monkeypatch 改造 |
-| `e6c76e6` | REDESIGN 文档驱动基线（01–05 + BUGFIX_LOG） |
-| `31ecd46` | 基线快照：节点拆分 workers + RAG 可观测 + Langfuse |
 
 ---
 

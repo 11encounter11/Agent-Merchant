@@ -1,3 +1,5 @@
 # 仅测试/开发依赖（生产环境不需要）：pip install -r requirements-dev.txt
 # 说明：暂不引入 pytest-asyncio——现有测试统一用 asyncio.run 包装协程（04 P2 裁决）。
 pytest>=8.0
+# scripts/check_data.py / verify_data.py / generate_test_data.py 使用（同步排查工具，不进生产）
+pymysql>=1.1.0

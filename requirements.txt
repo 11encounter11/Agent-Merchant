@@ -1,35 +1,36 @@
 # ============================================================
-# 苍穹外卖 - 商家智能助手 Agent 服务
-# 依赖清单
+# 苍穹外卖 - 商家智能经营顾问 Agent 服务 · 生产依赖
 # ============================================================
-# 安装：pip install -r requirements.txt
+# 安装：pip install -r requirements.txt   （测试另装 requirements-dev.txt）
+# P1 可复现性：全部锁定主版本上界；升级 = 显式决策，重建环境不漂移
 
 # --- Web 框架 ---
-fastapi>=0.115.0
-uvicorn[standard]>=0.30.0
+fastapi>=0.115.0,<1
+uvicorn[standard]>=0.30.0,<1
 
 # --- LLM 相关 ---
-langchain-openai>=0.3.0
-langgraph>=0.2.0
-langgraph-checkpoint-sqlite>=2.0.0
-langchain-core>=0.3.0
-aiosqlite>=0.20.0
+langchain-openai>=0.3.0,<2
+langgraph>=0.2.0,<2
+langgraph-checkpoint-sqlite>=2.0.0,<4
+langchain-core>=0.3.0,<2
+aiosqlite>=0.20.0,<1
 
-# --- Redis（会话缓存 / 限流；不可用自动降级）---
-redis>=5.0.0
+# --- Redis（会话缓存 / 限流 / 幂等；不可用自动降级）---
+redis>=5.0.0,<9
 
 # --- 数据库 ---
-aiomysql>=0.2.0
-cryptography>=42.0.0
+aiomysql>=0.2.0,<1
+# cryptography 仅服务 aiomysql 的 caching_sha2_password 认证
+cryptography>=42.0.0,<50
 
 # --- RAG ---
-chromadb>=0.5.0
+chromadb>=0.5.0,<2
 
 # --- 工具库 ---
-python-dotenv>=1.0.0
-httpx>=0.27.0
-pydantic>=2.9.0
-pydantic-settings>=2.5.0
+python-dotenv>=1.0.0,<2
+httpx>=0.27.0,<1
+pydantic>=2.9.0,<3
+pydantic-settings>=2.5.0,<3
 
 # --- 观测（未配 Key 时自动跳过）---
-langfuse>=4.0.0
+langfuse>=4.0.0,<5

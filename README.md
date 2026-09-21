@@ -10,8 +10,9 @@
 - **诊断**：因子分解归因、异常检测、趋势、相关性
 - **建议**：菜单优化、促销模拟、备货计划（strategist 生成 + reviewer 校验）
 - **知识问答**：退款/折扣/节假日等平台规定（JSON 知识库 + 关键词/向量混合检索，回答带来源）
-- **工程保障**：LangGraph 多 Agent 编排、Supervisor 派工、护栏（步数/Token/超时/幂等）、
-  注入拦截与工具门禁、Bearer 鉴权、限流（IP+会话）、断点续跑、对话日志、Langfuse 观测
+- **工程保障**：LangGraph 多 Agent 编排、Supervisor 派工、护栏（步数/Token/超时/幂等·Redis 化）、
+  注入拦截与工具门禁、Bearer 鉴权、限流（IP+会话防绕过）、输出泄露检测、商家数据隔离（merchant_id）、
+  断点续跑 + `/resume`、SSE 类型化事件流、对话日志与反馈（点赞/点踩）、只读配置后台、Langfuse 观测
 
 ## 快速开始
 
