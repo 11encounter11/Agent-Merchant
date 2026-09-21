@@ -19,8 +19,6 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
-_API_TIMEOUT = 10.0
-
 
 @tool
 async def query_weather(city: str = "") -> str:
@@ -45,7 +43,7 @@ async def query_weather(city: str = "") -> str:
     location = city or settings.WEATHER_DEFAULT_CITY
 
     try:
-        async with httpx.AsyncClient(timeout=_API_TIMEOUT) as client:
+        async with httpx.AsyncClient(timeout=settings.WEATHER_TIMEOUT_SEC) as client:
             # 1. 实时天气
             now_resp = await client.get(
                 f"{settings.WEATHER_API_URL}/weather/now",

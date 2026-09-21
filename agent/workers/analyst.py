@@ -20,6 +20,14 @@ from agent.workers.common import try_invoke_routed
 logger = logging.getLogger(__name__)
 
 
+def _response_with_calls(response, tool_calls: list) -> AIMessage:
+    return AIMessage(
+        content=getattr(response, "content", "") or "",
+        tool_calls=tool_calls,
+        id=getattr(response, "id", None),
+    )
+
+
 def analyst(state: AgentState, config: RunnableConfig | None = None) -> dict:
     """让绑定工具的 LLM 决定调用哪些分析工具（受步数/token 护栏约束）。"""
     user_input = state.get("user_input", "")
@@ -41,7 +49,7 @@ def analyst(state: AgentState, config: RunnableConfig | None = None) -> dict:
     gated_tools = filter_tools(ALL_TOOLS, intent_type, security)
     if not gated_tools:
         logger.info(f"[Analyst] 工具门禁：intent={intent_type} 无可用工具，跳过")
-        return {}
+        return {"guard_reason": "tools_locked"}
 
     logger.info(
         f"[Analyst] 开始数据分析, intent={intent_type} "
@@ -76,25 +84,18 @@ def analyst(state: AgentState, config: RunnableConfig | None = None) -> dict:
         if is_tool_allowed(intent_type, tc.get("name", ""), security)
     ]
     if len(gated_calls) < len(tool_calls):
-        dropped = [tc.get("name") for tc in tool_calls if tc not in gated_calls]
+        gated_ids = {id(tc) for tc in gated_calls}
+        dropped = [tc.get("name") for tc in tool_calls if id(tc) not in gated_ids]
         logger.warning(f"[Analyst] 工具门禁丢弃: {dropped}")
         tool_calls = gated_calls
-        response = AIMessage(
-            content=getattr(response, "content", "") or "",
-            tool_calls=tool_calls,
-            id=getattr(response, "id", None),
-        )
+        response = _response_with_calls(response, tool_calls)
 
     if tool_calls and len(tool_calls) > quota:
         logger.warning(
             f"[Analyst] tool_calls={len(tool_calls)} 超过剩余配额 {quota}，截断"
         )
         tool_calls = tool_calls[:quota]
-        response = AIMessage(
-            content=getattr(response, "content", "") or "",
-            tool_calls=tool_calls,
-            id=getattr(response, "id", None),
-        )
+        response = _response_with_calls(response, tool_calls)
         guard_reason = "max_tool_steps"
 
     tool_names = [tc.get("name", "") for tc in tool_calls]

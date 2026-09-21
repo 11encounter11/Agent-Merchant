@@ -56,9 +56,9 @@ async def lifespan(app: FastAPI):
 
         async with AsyncSqliteSaver.from_conn_string(db_path) as checkpointer:
             await checkpointer.setup()
-            graph_mod.agent_graph = graph_mod.build_agent_graph(
+            graph_mod.set_agent_graph(graph_mod.build_agent_graph(
                 checkpointer, interrupt_after=interrupt_after
-            )
+            ))
             logger.info(f"[Main] Checkpointer=sqlite path={db_path}")
             await ensure_chat_log_table()
             yield
@@ -67,9 +67,9 @@ async def lifespan(app: FastAPI):
     else:
         from langgraph.checkpoint.memory import MemorySaver
 
-        graph_mod.agent_graph = graph_mod.build_agent_graph(
+        graph_mod.set_agent_graph(graph_mod.build_agent_graph(
             MemorySaver(), interrupt_after=interrupt_after
-        )
+        ))
         logger.info("[Main] Checkpointer=memory（重启丢失）")
         await ensure_chat_log_table()
         yield

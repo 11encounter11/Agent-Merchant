@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def reflect(state: AgentState) -> dict:
     """输出安全校验；boundary / 护栏无有效回复时补文案。"""
-    messages = state["messages"]
+    messages = state.get("messages") or []
     user_input = state.get("user_input", "")
     intent = state.get("intent", {})
     guard_reason = state.get("guard_reason") or ""

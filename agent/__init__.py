@@ -3,9 +3,10 @@
 
 核心模块：
 - state.py:       AgentState 定义
-- llm.py:         LLM 工厂
-- graph.py:       LangGraph 图编排
-- nodes.py:       7 个节点函数
+- constants.py:   跨模块共享常量（单一真值）
+- llm.py:         LLM 工厂 + 模型路由
+- graph.py:       LangGraph 图编排（取图只用 get_agent_graph()）
+- workers/:       图节点（一节点一文件）
 - prompts.py:     System Prompt 集中管理
 - service.py:     对外服务接口（chat / chat_stream）
 - perception.py:  感知层（意图识别 + 情境注入）
@@ -14,6 +15,5 @@
 """
 
 from agent.service import chat, chat_stream
-from agent.graph import agent_graph
 
-__all__ = ["chat", "chat_stream", "agent_graph"]
+__all__ = ["chat", "chat_stream"]

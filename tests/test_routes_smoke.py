@@ -55,8 +55,10 @@ def test_chat_error_maps_to_friendly_message(monkeypatch):
 
 def test_chat_stream_events(monkeypatch):
     async def fake_stream(message, session_id, thread_id=None, client_ip=None):
-        yield "你"
-        yield "好"
+        async def gen():
+            yield "你"
+            yield "好"
+        return gen()
 
     monkeypatch.setattr(agent_service, "chat_stream", fake_stream)
     resp = client.post("/api/agent/chat/stream", json={"message": "hi", "session_id": "smoke-s"})

@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def call_llm(state: AgentState, config: RunnableConfig | None = None) -> dict:
     """调用 LLM 生成最终文本回复。"""
-    messages = state["messages"]
+    messages = state.get("messages") or []
     context = state.get("context", {})
     strategy = state.get("strategy", {})
     analysis = state.get("analysis_result", {})

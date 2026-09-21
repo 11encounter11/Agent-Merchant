@@ -121,12 +121,13 @@ async def chat_stream(request: ChatRequest, http_request: Request, _auth: None =
     async def event_generator():
         yield f"data: {json.dumps({'type': 'session', 'session_id': session_id, 'thread_id': thread_id}, ensure_ascii=False)}\n\n"
         try:
-            async for chunk in agent_chat_stream(
+            stream = await agent_chat_stream(
                 request.message,
                 session_id,
                 thread_id=thread_id,
                 client_ip=client_ip,
-            ):
+            )
+            async for chunk in stream:
                 if isinstance(chunk, dict):
                     yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
                 else:

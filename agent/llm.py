@@ -115,7 +115,7 @@ def is_llm_connect_error(exc: BaseException) -> bool:
 
 def _make_http_clients() -> tuple[httpx.Client, httpx.AsyncClient]:
     """显式 httpx client，避免 langchain-openai 自动改走系统代理。"""
-    timeout = httpx.Timeout(60.0, connect=20.0)
+    timeout = httpx.Timeout(settings.LLM_TIMEOUT_SEC, connect=settings.LLM_CONNECT_TIMEOUT_SEC)
     trust = bool(settings.LLM_HTTP_TRUST_ENV)
     return (
         httpx.Client(trust_env=trust, timeout=timeout),

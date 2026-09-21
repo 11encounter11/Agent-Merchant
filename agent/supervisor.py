@@ -56,9 +56,13 @@ def decide_next_worker(state: dict[str, Any]) -> dict[str, Any]:
     if is_token_budget_exceeded(token_usage):
         guard_reason = guard_reason or "token_budget"
         next_worker = "call_llm"
-    elif is_tool_steps_exceeded(tool_steps) and "analyst" in history and not analysis:
+    elif is_tool_steps_exceeded(tool_steps) and "analyst" in history:
+        # R2：步数触顶一律记收束原因；只有还没拿到分析结果时才立即收束
         guard_reason = guard_reason or "max_tool_steps"
-        next_worker = "call_llm"
+        if not analysis:
+            next_worker = "call_llm"
+        else:
+            next_worker = _pick_worker(plan, history, analysis, strategy)
     elif len(history) >= settings.MAX_SUPERVISOR_ROUNDS:
         logger.warning(
             f"[Supervisor] 轮次触顶 {len(history)}>={settings.MAX_SUPERVISOR_ROUNDS}"

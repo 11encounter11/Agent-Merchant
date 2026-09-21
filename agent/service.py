@@ -145,13 +145,13 @@ async def chat(
     return reply
 
 
-def chat_stream(
+async def chat_stream(
     message: str,
     session_id: str = None,
     thread_id: str = None,
     client_ip: str = "",
 ):
-    """流式对话。"""
+    """流式对话。R3：限流在返回生成器前检查，首字节前完成校验。"""
     if session_id is None:
         session_id = str(uuid.uuid4())
     thread_id = thread_id or session_id
@@ -162,12 +162,13 @@ def chat_stream(
         f"[ChatStream] session={session_id} thread_id={thread_id} message='{cleaned}'"
     )
 
+    allowed, rate_reason = await check_rate_limit(
+        session_id=session_id, client_ip=client_ip
+    )
+
     async def async_generator():
-        allowed, reason = await check_rate_limit(
-            session_id=session_id, client_ip=client_ip
-        )
         if not allowed:
-            yield {"type": "content", "content": reason or "请求过于频繁，请稍后再试。"}
+            yield {"type": "content", "content": rate_reason or "请求过于频繁，请稍后再试。"}
             yield {"type": "rate_limited", "session_id": session_id}
             return
 

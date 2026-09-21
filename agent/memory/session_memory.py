@@ -121,16 +121,23 @@ class SessionMemory:
         filepath = _session_file(session_id)
         if filepath.exists():
             filepath.unlink()
-        # 异步清 Redis 交给调用方；此处尽力同步触发不了 await
+        # Redis 缓存清理：有运行中循环则后台任务，否则同步跑完；失败必须留痕（R5）
+        import asyncio
+
         try:
-            import asyncio
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                loop.create_task(self._redis_delete(session_id))
-            else:
-                loop.run_until_complete(self._redis_delete(session_id))
-        except Exception:
-            pass
+            try:
+                loop = asyncio.get_running_loop()
+                task = loop.create_task(self._redis_delete(session_id))
+                task.add_done_callback(
+                    lambda t: logger.warning(
+                        f"[SessionMemory] Redis 清理失败 {session_id}: {t.exception()}"
+                    )
+                    if t.exception() else None
+                )
+            except RuntimeError:
+                asyncio.run(self._redis_delete(session_id))
+        except Exception as e:
+            logger.warning(f"[SessionMemory] Redis 会话删除失败 {session_id}: {e}")
 
     def list_sessions(self) -> List[dict]:
         _ensure_dir()

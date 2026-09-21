@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # False：LLM HTTP 不走系统/环境代理（智谱等国内接口被 Clash 劫持时会 SSL EOF）
     # 若模型必须走代理才能访问，设为 true
     LLM_HTTP_TRUST_ENV: bool = False
+    # R9 单一真值：LLM HTTP 超时（总/连接）
+    LLM_TIMEOUT_SEC: float = 60.0
+    LLM_CONNECT_TIMEOUT_SEC: float = 20.0
 
     # ================================================================
     # Embedding 配置（用于 RAG 知识库向量化）
@@ -62,6 +65,7 @@ class Settings(BaseSettings):
     WEATHER_API_KEY: str = ""
     WEATHER_API_URL: str = "https://devapi.qweather.com/v7"
     WEATHER_DEFAULT_CITY: str = "101040100"
+    WEATHER_TIMEOUT_SEC: float = 10.0
 
     # ================================================================
     # 会话与记忆
@@ -100,6 +104,8 @@ class Settings(BaseSettings):
     CHECKPOINT_SQLITE_PATH: str = "data/checkpoints.sqlite"
     # 演示断点：设为 tools 时，工具执行后暂停，可用同 thread_id 续跑
     CHECKPOINT_INTERRUPT_AFTER: str = ""
+    # R9：续跑/跳过卡住节点的防御性循环上限
+    CHECKPOINT_MAX_SKIP: int = 20
 
     # ================================================================
     # Redis / 限流 / 对话日志

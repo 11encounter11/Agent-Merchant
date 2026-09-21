@@ -71,7 +71,8 @@ def main() -> None:
     args = parser.parse_args()
 
     # 延迟导入：避免 --help 时也去连模型/知识库
-    from agent.graph import agent_graph
+    from agent.graph import get_agent_graph
+    agent_graph = get_agent_graph()
     from agent.perception import perception
 
     session_id = args.session or str(uuid.uuid4())

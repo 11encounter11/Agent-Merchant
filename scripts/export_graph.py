@@ -12,13 +12,13 @@ _ROOT = Path(__file__).resolve().parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from agent.graph import agent_graph
+from agent.graph import get_agent_graph
 
 
 def main():
     out = _ROOT / "docs" / "flow_graph.png"
     out.parent.mkdir(parents=True, exist_ok=True)
-    png = agent_graph.get_graph(xray=True).draw_mermaid_png()
+    png = get_agent_graph().get_graph(xray=True).draw_mermaid_png()
     out.write_bytes(png)
     print(f"流程图已保存为 {out}")
 

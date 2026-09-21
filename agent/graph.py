@@ -106,10 +106,20 @@ def build_agent_graph(checkpointer=None, *, interrupt_after: list[str] | None = 
     return compiled
 
 
-# 模块导入时先挂 MemorySaver；FastAPI lifespan 可替换为 Sqlite
-agent_graph = build_agent_graph()
+# R7：懒编译单例。生产由 FastAPI lifespan 经 set_agent_graph 注入 Sqlite 图；
+# 未注入时首次使用回退 MemorySaver 图。外部一律走 get_agent_graph()，
+# 禁止 `from agent.graph import agent_graph` 抓旧引用。
+_agent_graph = None
 
 
 def get_agent_graph():
     """始终取当前进程内最新编译图（lifespan 替换后生效）。"""
-    return agent_graph
+    global _agent_graph
+    if _agent_graph is None:
+        _agent_graph = build_agent_graph()
+    return _agent_graph
+
+
+def set_agent_graph(compiled) -> None:
+    global _agent_graph
+    _agent_graph = compiled

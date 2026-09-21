@@ -51,10 +51,21 @@ class KnowledgeBase:
         self.client = None
         self.collection = None
         self.last_hits: list[dict] = []
+        # R6 懒加载：import 期不做 chromadb/embedding/读盘，首次检索才初始化
+        self._enable_vector = enable_vector
+        self._ready = False
+        self._loaded = False
 
-        if not enable_vector:
+    def _ensure_ready(self) -> None:
+        if self._ready:
             return
+        self._ready = True  # 先置位，失败也不反复重试（退回仅关键词会自然降级）
+        if self._enable_vector:
+            self._init_vector()
+        if not self._loaded:
+            self.load_data()
 
+    def _init_vector(self) -> None:
         try:
             import chromadb
             from chromadb.utils import embedding_functions
@@ -165,6 +176,7 @@ class KnowledgeBase:
             self.logger.info("[KnowledgeBase] 没有找到知识文档")
 
         self.logger.info(f"[KnowledgeBase] 关键词文档: {len(self._all_documents)} 条")
+        self._loaded = True
 
     def _ingest_json(
         self,
@@ -248,6 +260,7 @@ class KnowledgeBase:
 
     def search_keyword_hits(self, query: str, top_k: int = 3) -> list[dict]:
         """JSON keywords 匹配，带来源。"""
+        self._ensure_ready()
         hits: list[dict] = []
         seen: set[str] = set()
         query_lower = query.lower()
@@ -373,5 +386,4 @@ class KnowledgeBase:
         return "\n".join(formatted)
 
 
-knowledge_base = KnowledgeBase()
-knowledge_base.load_data()
+knowledge_base = KnowledgeBase()  # R6：构造零副作用；首次检索时 _ensure_ready 完成向量初始化 + 读盘

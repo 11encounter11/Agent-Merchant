@@ -28,9 +28,13 @@ def test_token_budget():
 
 def test_idempotency_roundtrip():
     key = make_idempotency_key("s1", "factor_decomposition", {"begin_date": "2026-01-01"})
-    assert idempotency_get(key) is None
-    idempotency_set(key, "ok-result")
-    assert idempotency_get(key) == "ok-result"
+
+    async def run():
+        assert await idempotency_get(key) is None
+        await idempotency_set(key, "ok-result")
+        return await idempotency_get(key)
+
+    assert asyncio.run(run()) == "ok-result"
 
 
 class _FakeTool:

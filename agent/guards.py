@@ -21,6 +21,7 @@ import time
 from typing import Any, Optional
 
 from config import settings
+from db.redis_client import get_redis
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +30,25 @@ SIDE_EFFECT_TOOLS = frozenset({
     # 预留：未来写操作（改价、推送等）必须列入
 })
 
-# session|tool|args_hash → (expires_at, result_str)
+# R4：Redis 为主存储（多 worker 共享）；Redis 不可用时降级到进程内字典
+_IDEM_PREFIX = "agent:idem:"
 _idempotency_store: dict[str, tuple[float, str]] = {}
+
+
+def _local_get(key: str) -> Optional[str]:
+    item = _idempotency_store.get(key)
+    if not item:
+        return None
+    expires_at, value = item
+    if time.time() > expires_at:
+        _idempotency_store.pop(key, None)
+        return None
+    return value
+
+
+def _local_set(key: str, value: str) -> None:
+    ttl = settings.IDEMPOTENCY_TTL_SEC
+    _idempotency_store[key] = (time.time() + ttl, value)
 
 
 def remaining_tool_quota(tool_steps: int) -> int:
@@ -92,20 +110,29 @@ def make_idempotency_key(session_id: str, tool_name: str, args: dict) -> str:
     return f"{session_id or 'anon'}|{tool_name}|{digest}"
 
 
-def idempotency_get(key: str) -> Optional[str]:
-    item = _idempotency_store.get(key)
-    if not item:
-        return None
-    expires_at, value = item
-    if time.time() > expires_at:
-        _idempotency_store.pop(key, None)
-        return None
-    return value
+async def idempotency_get(key: str) -> Optional[str]:
+    try:
+        r = await get_redis()
+        if r is not None:
+            val = await r.get(f"{_IDEM_PREFIX}{key}")
+            if val is not None:
+                return val.decode("utf-8") if isinstance(val, bytes) else str(val)
+            return None
+    except Exception as e:
+        logger.warning(f"[Guards] 幂等 Redis 读失败，降级本地: {e}")
+    return _local_get(key)
 
 
-def idempotency_set(key: str, value: str) -> None:
+async def idempotency_set(key: str, value: str) -> None:
     ttl = settings.IDEMPOTENCY_TTL_SEC
-    _idempotency_store[key] = (time.time() + ttl, value)
+    try:
+        r = await get_redis()
+        if r is not None:
+            await r.setex(f"{_IDEM_PREFIX}{key}", ttl, value)
+            return
+    except Exception as e:
+        logger.warning(f"[Guards] 幂等 Redis 写失败，降级本地: {e}")
+    _local_set(key, value)
 
 
 async def invoke_tool_guarded(
@@ -123,7 +150,7 @@ async def invoke_tool_guarded(
         return f"参数校验失败，已拒绝执行（Pydantic）：{err}"
 
     key = make_idempotency_key(session_id, tool_name, args)
-    cached = idempotency_get(key)
+    cached = await idempotency_get(key)
     if cached is not None:
         logger.info(f"[Guards] 幂等命中 {tool_name} key={key}")
         return f"[幂等复用] {cached}"
@@ -137,7 +164,7 @@ async def invoke_tool_guarded(
             result = await asyncio.wait_for(tool.ainvoke(args or {}), timeout=timeout)
             content = result if isinstance(result, str) else str(result)
             # 只读工具也缓存，便于演示「重试不重复打库」；副作用工具强制缓存
-            idempotency_set(key, content)
+            await idempotency_set(key, content)
             if attempt > 0:
                 logger.info(f"[Guards] {tool_name} 第 {attempt + 1} 次尝试成功")
             return content
@@ -167,5 +194,6 @@ def guard_user_message(reason: str) -> str:
         ),
         "tool_args_invalid": "部分工具参数不合法，已跳过无效调用。",
         "llm_unavailable": "模型服务暂时连不上，请稍后再试。",
+        "tools_locked": "本轮请求已被安全策略限制使用数据工具，将基于对话上下文作答。",
     }
     return mapping.get(reason, f"本轮已触发护栏（{reason}），停止继续执行。")

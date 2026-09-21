@@ -16,6 +16,7 @@ import logging
 from typing import Any, Optional
 
 from agent.observability import attach_tracing
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ async def get_thread_snapshot(graph, thread_id: str):
 
 async def _skip_pending(graph, cfg: dict) -> None:
     """续跑失败时把卡住的 next 节点标成已完成，避免新一轮对话被拖死。"""
-    for _ in range(20):
+    for _ in range(settings.CHECKPOINT_MAX_SKIP):
         snap = await graph.aget_state(cfg)
         if not snap or not snap.next:
             return
@@ -75,7 +76,7 @@ async def resume_if_pending(
     result = None
     try:
         # 防御极端环：最多续跑若干次 invoke
-        for _ in range(20):
+        for _ in range(settings.CHECKPOINT_MAX_SKIP):
             snap = await graph.aget_state(cfg)
             if not snap.next:
                 break
