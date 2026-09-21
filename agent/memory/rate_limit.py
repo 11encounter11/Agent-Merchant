@@ -42,10 +42,13 @@ async def check_rate_limit(
 
     limit = max(1, int(settings.RATE_LIMIT_PER_MINUTE))
     identity = session_id or client_ip or "anonymous"
-    bucket = f"session:{session_id}" if session_id else f"ip:{client_ip or 'unknown'}"
+    # B0-A4：IP 桶必计（换 session_id 无法绕过）；有会话时附加会话桶
+    buckets = [f"ip:{client_ip or 'unknown'}"]
+    if session_id:
+        buckets.append(f"session:{session_id}")
 
     try:
-        allowed = await _hit(bucket, limit)
+        allowed = all([await _hit(b, limit) for b in buckets])
     except Exception as e:
         logger.warning(f"[RateLimit] 检查失败，放行: {e}")
         return True, None

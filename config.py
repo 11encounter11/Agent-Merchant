@@ -47,18 +47,12 @@ class Settings(BaseSettings):
     # ================================================================
     # MySQL 数据库（苍穹外卖 sky_take_out）
     # ================================================================
+    # 口令不得写入源码：必须在 .env / 环境变量提供，未配置时启动告警、查数工具不可用
     DB_HOST: str = "localhost"
     DB_PORT: int = 3306
     DB_USER: str = "root"
-    DB_PASSWORD: str = "123456"
+    DB_PASSWORD: str = ""
     DB_NAME: str = "sky_take_out"
-
-    # ================================================================
-    # Java 后端（苍穹外卖 Spring Boot）
-    # ================================================================
-    JAVA_BACKEND_URL: str = "http://localhost:8080"
-    JAVA_ADMIN_USER: str = "admin"
-    JAVA_ADMIN_PASSWORD: str = "123456"
 
     # ================================================================
     # 天气 API（和风天气 https://dev.qweather.com）
@@ -114,9 +108,15 @@ class Settings(BaseSettings):
     CHAT_LOG_ENABLED: bool = True
 
     # ================================================================
-    # 安全（注入拦截 / 工具门禁）
+    # 安全（注入拦截 / 工具门禁 / API 鉴权 / CORS）
     # ================================================================
     SECURITY_INJECTION_ENABLED: bool = True
+    # 非空时 /api/* 必须带 Authorization: Bearer <token>；空=开发模式（启动告警）
+    AGENT_API_TOKEN: str = ""
+    # CORS 白名单（逗号分隔）；禁止使用 *
+    CORS_ORIGINS: str = "http://localhost:8888,http://127.0.0.1:8888"
+    # 仅当部署在可信反向代理后才置 true：允许采信 x-forwarded-for 取客户端 IP
+    TRUST_PROXY_HEADERS: bool = False
 
     # ================================================================
     # Langfuse（观测：Callback 挂到图运行配置，不改节点）
@@ -129,6 +129,8 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        # .env 遗留的已删除配置项（如 JAVA_*）忽略而非报错，保证配置演进不炸启动
+        extra = "ignore"
 
 
 settings = Settings()

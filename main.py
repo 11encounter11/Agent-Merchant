@@ -36,6 +36,11 @@ async def lifespan(app: FastAPI):
     """启动：挂 Checkpointer 并重编译图；关闭：释放资源。"""
     setup_logging(log_level=logging.INFO)
 
+    if not settings.DB_PASSWORD:
+        logger.warning("[Main] DB_PASSWORD 未配置：查数类工具将不可用（.env 中设置）")
+    if not settings.AGENT_API_TOKEN:
+        logger.warning("[Main] AGENT_API_TOKEN 未配置：/api/* 处于无鉴权开发模式")
+
     import agent.graph as graph_mod
 
     interrupt_after = _interrupt_after_list()
@@ -82,9 +87,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+_cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

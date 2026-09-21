@@ -14,6 +14,8 @@
 import logging
 import re
 
+from config import settings
+
 logger = logging.getLogger(__name__)
 
 # 身份关键词（不允许出现在回复中）
@@ -24,6 +26,19 @@ _IDENTITY_KW = [
 
 # 身份替代话术
 _IDENTITY_REPLACEMENT = "我是苍穹外卖的智能经营顾问"
+
+# B0-A5：提示词/内部信息泄露标记（不区分大小写）
+_PROMPT_LEAK_MARKERS = [
+    "system_prompt", "system prompt", "systemprompt",
+    "提示词内容", "内部指令", "系统规则如下",
+]
+
+_LEAK_REPLACEMENT = "这部分内部信息我不能展示。"
+
+
+def _configured_model_names() -> list[str]:
+    """配置中的模型名同样属于不可泄露信息（随 .env 变化，不能写死）。"""
+    return [n.strip() for n in (settings.LLM_MODEL, settings.LLM_MODEL_SIMPLE) if n.strip()]
 
 # 边界拒绝信号（LLM 已经在拒绝，无需拦截）
 _REJECTION_SIGNALS = [
@@ -50,10 +65,23 @@ def sanitize(response: str, user_input: str = "") -> str:
         return response
 
     response = _check_identity(response)
+    response = _check_leak(response)
 
     if user_input:
         response = _check_boundary(response, user_input)
 
+    return response
+
+
+def _check_leak(response: str) -> str:
+    """B0-A5：模型名 / 提示词标记泄露时按句替换。"""
+    lowered = response.lower()
+    hits = [m for m in _PROMPT_LEAK_MARKERS if m in lowered]
+    hits += [n for n in _configured_model_names() if n.lower() in lowered]
+    for hit in hits:
+        pattern = r"[^。！？\n]*" + re.escape(hit) + r"[^。！？\n]*[。！？]?"
+        response = re.sub(pattern, _LEAK_REPLACEMENT, response, flags=re.IGNORECASE)
+        logger.warning(f"[Reflect] 泄露校验触发: '{hit}'")
     return response
 
 

@@ -6,11 +6,12 @@ FastAPI vs Spring Boot（仅接口层）：
   @RequestBody DTO            ≈  Pydantic ChatRequest
 """
 
+import hmac
 import json
 import logging
 import uuid
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from config import settings
@@ -21,10 +22,21 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
+def require_auth(authorization: str = Header(default="")) -> None:
+    """B0-A2：/api/* 端点鉴权。AGENT_API_TOKEN 为空时放行（开发模式，启动已告警）。"""
+    token = settings.AGENT_API_TOKEN
+    if not token:
+        return
+    if not hmac.compare_digest(authorization.strip(), f"Bearer {token}"):
+        raise HTTPException(status_code=401, detail="未授权：缺少或错误的 Bearer Token")
+
+
 def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for") or ""
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    # B0-A6：x-forwarded-for 可伪造，仅可信反代部署时才采信
+    if settings.TRUST_PROXY_HEADERS:
+        forwarded = request.headers.get("x-forwarded-for") or ""
+        if forwarded:
+            return forwarded.split(",")[0].strip()
     if request.client:
         return request.client.host or ""
     return ""
@@ -53,6 +65,7 @@ async def health_check():
         "service": settings.APP_NAME,
         "version": "0.1.0",
         "langfuse": tracing_ready(),
+        "auth_enabled": bool(settings.AGENT_API_TOKEN),
     }
 
 
@@ -67,7 +80,7 @@ async def root():
 
 
 @router.post("/api/agent/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest, http_request: Request):
+async def chat(request: ChatRequest, http_request: Request, _auth: None = Depends(require_auth)):
     """非流式聊天。"""
     from agent.service import chat as agent_chat
 
@@ -97,7 +110,7 @@ async def chat(request: ChatRequest, http_request: Request):
 
 
 @router.post("/api/agent/chat/stream")
-async def chat_stream(request: ChatRequest, http_request: Request):
+async def chat_stream(request: ChatRequest, http_request: Request, _auth: None = Depends(require_auth)):
     """流式聊天（SSE）。"""
     from agent.service import chat_stream as agent_chat_stream
 
@@ -131,7 +144,7 @@ async def chat_stream(request: ChatRequest, http_request: Request):
 
 
 @router.get("/api/agent/sessions")
-async def list_sessions():
+async def list_sessions(_auth: None = Depends(require_auth)):
     """获取所有会话列表（用于前端会话管理）。"""
     from agent.memory.session_memory import session_memory
 
@@ -140,7 +153,7 @@ async def list_sessions():
 
 
 @router.delete("/api/agent/sessions/{session_id}")
-async def delete_session(session_id: str):
+async def delete_session(session_id: str, _auth: None = Depends(require_auth)):
     """删除指定会话。"""
     from agent.memory.session_memory import session_memory
 
