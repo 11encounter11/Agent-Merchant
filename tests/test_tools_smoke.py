@@ -40,14 +40,14 @@ DB_MODULES_TOOLS = [
 
 
 class FakeQuery:
-    """按调用次序返回预置结果，耗尽后返回 []。"""
+    """按调用次序返回预置结果，耗尽后返回 []；记录每次 (sql, params)。"""
 
     def __init__(self, *results):
         self._results = list(results)
-        self.calls = 0
+        self.calls: list[tuple[str, tuple]] = []
 
     async def __call__(self, sql, params=None):
-        self.calls += 1
+        self.calls.append((sql, tuple(params or ())))
         return self._results.pop(0) if self._results else []
 
 
@@ -68,7 +68,7 @@ def test_factor_decomposition_ok(monkeypatch):
     _patch(monkeypatch, m_factor, fake)
     out = _run(m_factor.factor_decomposition, {})
     assert "因子分解" in out and "主食" in out
-    assert fake.calls == 4
+    assert len(fake.calls) == 4
 
 
 def test_anomaly_detection_flags_spike(monkeypatch):
@@ -207,3 +207,15 @@ def test_tools_empty_data_returns_hint(module, tool, args, monkeypatch):
     out = _run(tool, args)
     assert isinstance(out, str) and out
     assert ("没有" in out) or ("不足" in out), out
+
+
+@pytest.mark.parametrize("module,tool,args", DB_MODULES_TOOLS)
+def test_all_db_queries_filter_merchant(module, tool, args, monkeypatch):
+    """B6a 数据隔离：任何一条经营数据 SQL 都必须过滤 merchant_id。"""
+    fake = FakeQuery()
+    _patch(monkeypatch, module, fake)
+    _run(tool, args)
+    assert fake.calls, "工具应至少发起一次查询"
+    for sql, params in fake.calls:
+        assert "merchant_id = %s" in sql, sql[:80]
+        assert settings.MERCHANT_ID in params, params

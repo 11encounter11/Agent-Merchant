@@ -16,6 +16,7 @@ from datetime import date, timedelta
 
 from langchain_core.tools import tool
 from db.database import execute_query
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -52,11 +53,12 @@ async def prep_plan(days: int = 14) -> str:
         JOIN category c ON d.category_id = c.id
         JOIN orders o ON od.order_id = o.id
         WHERE o.status IN (3, 4, 5)
+          AND o.merchant_id = %s
           AND DATE(o.order_time) BETWEEN %s AND %s
         GROUP BY d.id, d.name, c.name
         ORDER BY total_sold DESC
     """
-    rows = await execute_query(sql_total, (start.isoformat(), today.isoformat()))
+    rows = await execute_query(sql_total, (settings.MERCHANT_ID, start.isoformat(), today.isoformat()))
 
     if not rows:
         return f"最近 {days} 天没有销售数据，无法生成备货计划。"
@@ -67,13 +69,14 @@ async def prep_plan(days: int = 14) -> str:
                DAYOFWEEK(o.order_time) AS day_of_week
         FROM orders o
         WHERE o.status IN (3, 4, 5)
+          AND o.merchant_id = %s
           AND DATE(o.order_time) BETWEEN %s AND %s
           AND DAYOFWEEK(o.order_time) = %s
         GROUP BY DATE(o.order_time)
     """
     # MySQL DAYOFWEEK: 1=Sunday, 2=Monday, ..., 7=Saturday
     mysql_dow = (tomorrow_weekday + 2) % 7 + 1  # Python 0=Mon → MySQL 2=Mon
-    weekday_dates = await execute_query(sql_weekday, (start.isoformat(), today.isoformat(), mysql_dow))
+    weekday_dates = await execute_query(sql_weekday, (settings.MERCHANT_ID, start.isoformat(), today.isoformat(), mysql_dow))
     weekday_count = len(weekday_dates)
 
     # 3. 查询明天同星期的菜品销量
@@ -86,11 +89,12 @@ async def prep_plan(days: int = 14) -> str:
             JOIN dish d ON od.dish_id = d.id
             JOIN orders o ON od.order_id = o.id
             WHERE o.status IN (3, 4, 5)
+              AND o.merchant_id = %s
               AND DATE(o.order_time) BETWEEN %s AND %s
               AND DAYOFWEEK(o.order_time) = %s
             GROUP BY d.id, d.name
         """
-        wd_rows = await execute_query(sql_weekday_dish, (start.isoformat(), today.isoformat(), mysql_dow))
+        wd_rows = await execute_query(sql_weekday_dish, (settings.MERCHANT_ID, start.isoformat(), today.isoformat(), mysql_dow))
         weekday_dishes = {r["dish_name"]: int(r["total_sold"]) for r in wd_rows}
 
     # 4. 计算备货量

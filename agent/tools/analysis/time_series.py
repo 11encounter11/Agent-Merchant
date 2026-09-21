@@ -21,6 +21,7 @@ from datetime import date, timedelta
 
 from langchain_core.tools import tool
 from db.database import execute_query
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,7 @@ async def trend_analysis(
             SELECT DATE(order_time) AS order_date, COUNT(*) AS value
             FROM orders
             WHERE status IN (3, 4, 5)
+              AND merchant_id = %s
               AND DATE(order_time) BETWEEN %s AND %s
             GROUP BY DATE(order_time)
             ORDER BY order_date
@@ -107,6 +109,7 @@ async def trend_analysis(
                    COALESCE(AVG(amount), 0) AS value
             FROM orders
             WHERE status IN (3, 4, 5)
+              AND merchant_id = %s
               AND DATE(order_time) BETWEEN %s AND %s
             GROUP BY DATE(order_time)
             ORDER BY order_date
@@ -118,13 +121,14 @@ async def trend_analysis(
                    COALESCE(SUM(amount), 0) AS value
             FROM orders
             WHERE status IN (3, 4, 5)
+              AND merchant_id = %s
               AND DATE(order_time) BETWEEN %s AND %s
             GROUP BY DATE(order_time)
             ORDER BY order_date
         """
         metric_label = "营业额(元)"
 
-    rows = await execute_query(sql, (start.isoformat(), today.isoformat()))
+    rows = await execute_query(sql, (settings.MERCHANT_ID, start.isoformat(), today.isoformat()))
 
     if not rows:
         return f"最近 {days} 天没有{metric_label}数据。"

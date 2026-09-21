@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     DB_USER: str = "root"
     DB_PASSWORD: str = ""
     DB_NAME: str = "sky_take_out"
+    # B6a 数据隔离：所有经营数据查询强制过滤该商家 ID（需先执行 scripts/migrate_add_merchant_id.sql）
+    MERCHANT_ID: int = 1
 
     # ================================================================
     # 天气 API（和风天气 https://dev.qweather.com）

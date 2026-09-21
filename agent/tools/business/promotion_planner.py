@@ -58,9 +58,10 @@ async def promotion_planner(
         JOIN category c ON d.category_id = c.id
         JOIN orders o ON od.order_id = o.id
         WHERE o.status IN (3, 4, 5)
+          AND o.merchant_id = %s
           AND DATE(o.order_time) BETWEEN %s AND %s
     """
-    params = [settings.COST_RATIO_DEFAULT, start.isoformat(), today.isoformat()]
+    params = [settings.COST_RATIO_DEFAULT, settings.MERCHANT_ID, start.isoformat(), today.isoformat()]
     if category_name:
         sql += " AND c.name = %s"
         params.append(category_name)

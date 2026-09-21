@@ -51,11 +51,12 @@ async def menu_optimization(days: int = 30) -> str:
         JOIN category c ON d.category_id = c.id
         JOIN orders o ON od.order_id = o.id
         WHERE o.status IN (3, 4, 5)
+          AND o.merchant_id = %s
           AND DATE(o.order_time) BETWEEN %s AND %s
         GROUP BY d.id, d.name, c.name, d.price, d.cost
         ORDER BY total_revenue DESC
     """
-    rows = await execute_query(sql, (settings.COST_RATIO_DEFAULT, start.isoformat(), today.isoformat()))
+    rows = await execute_query(sql, (settings.COST_RATIO_DEFAULT, settings.MERCHANT_ID, start.isoformat(), today.isoformat()))
 
     if not rows:
         return f"最近 {days} 天没有销售数据。"

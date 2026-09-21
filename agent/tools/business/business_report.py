@@ -15,6 +15,7 @@ from datetime import date, timedelta
 
 from langchain_core.tools import tool
 from db.database import execute_query
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -57,10 +58,11 @@ async def business_report(report_type: str = "daily") -> str:
             COALESCE(AVG(amount), 0) AS avg_amount,
             SUM(CASE WHEN status = 6 THEN 1 ELSE 0 END) AS cancelled
         FROM orders
-        WHERE DATE(order_time) BETWEEN %s AND %s
+        WHERE merchant_id = %s
+          AND DATE(order_time) BETWEEN %s AND %s
     """
-    current = await execute_query(sql_summary, (period_start.isoformat(), period_end.isoformat()))
-    previous = await execute_query(sql_summary, (compare_start.isoformat(), compare_end.isoformat()))
+    current = await execute_query(sql_summary, (settings.MERCHANT_ID, period_start.isoformat(), period_end.isoformat()))
+    previous = await execute_query(sql_summary, (settings.MERCHANT_ID, compare_start.isoformat(), compare_end.isoformat()))
 
     if not current:
         return f"{'本' if report_type == 'weekly' else '今'}日没有经营数据。"
@@ -87,12 +89,13 @@ async def business_report(report_type: str = "daily") -> str:
         JOIN category c ON d.category_id = c.id
         JOIN orders o ON od.order_id = o.id
         WHERE o.status IN (3, 4, 5)
+          AND o.merchant_id = %s
           AND DATE(o.order_time) BETWEEN %s AND %s
         GROUP BY c.id, c.name
         ORDER BY total_revenue DESC
         LIMIT 5
     """
-    categories = await execute_query(sql_category, (period_start.isoformat(), period_end.isoformat()))
+    categories = await execute_query(sql_category, (settings.MERCHANT_ID, period_start.isoformat(), period_end.isoformat()))
 
     # 3. 组装报告
     lines = [

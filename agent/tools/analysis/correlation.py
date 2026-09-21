@@ -93,11 +93,12 @@ async def correlation_analysis(
                COALESCE(AVG(amount), 0) AS avg_price
         FROM orders
         WHERE status IN (3, 4, 5)
+          AND merchant_id = %s
           AND DATE(order_time) BETWEEN %s AND %s
         GROUP BY DATE(order_time)
         ORDER BY order_date
     """
-    rows = await execute_query(sql, (start.isoformat(), today.isoformat()))
+    rows = await execute_query(sql, (settings.MERCHANT_ID, start.isoformat(), today.isoformat()))
 
     if len(rows) < 3:
         return f"数据不足（仅 {len(rows)} 天），无法计算相关性。至少需要 3 天数据。"

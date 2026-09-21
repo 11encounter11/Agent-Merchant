@@ -54,15 +54,16 @@ async def cost_profit_analysis(
         JOIN category c ON d.category_id = c.id
         JOIN orders o ON od.order_id = o.id
         WHERE o.status IN (3, 4, 5)
+          AND o.merchant_id = %s
           AND DATE(o.order_time) BETWEEN %s AND %s
         GROUP BY c.id, c.name
         ORDER BY total_revenue DESC
     """
 
-    params = (start.isoformat(), today.isoformat())
+    params = (settings.MERCHANT_ID, start.isoformat(), today.isoformat())
     if category_name:
         sql_category += " HAVING c.name = %s"
-        params = (start.isoformat(), today.isoformat(), category_name)
+        params = (settings.MERCHANT_ID, start.isoformat(), today.isoformat(), category_name)
 
     categories = await execute_query(sql_category, params)
 
@@ -82,12 +83,13 @@ async def cost_profit_analysis(
         JOIN category c ON d.category_id = c.id
         JOIN orders o ON od.order_id = o.id
         WHERE o.status IN (3, 4, 5)
+          AND o.merchant_id = %s
           AND DATE(o.order_time) BETWEEN %s AND %s
     """
-    dish_params = (settings.COST_RATIO_DEFAULT, start.isoformat(), today.isoformat())
+    dish_params = (settings.COST_RATIO_DEFAULT, settings.MERCHANT_ID, start.isoformat(), today.isoformat())
     if category_name:
         sql_dish += " AND c.name = %s"
-        dish_params = (settings.COST_RATIO_DEFAULT, start.isoformat(), today.isoformat(), category_name)
+        dish_params = (settings.COST_RATIO_DEFAULT, settings.MERCHANT_ID, start.isoformat(), today.isoformat(), category_name)
 
     sql_dish += " GROUP BY d.id, d.name, c.name, d.price, d.cost ORDER BY total_revenue DESC LIMIT 20"
     dishes = await execute_query(sql_dish, dish_params)

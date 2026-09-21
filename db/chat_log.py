@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 CREATE_SQL = """
 CREATE TABLE IF NOT EXISTS agent_chat_log (
     id            BIGINT PRIMARY KEY AUTO_INCREMENT,
+    merchant_id   BIGINT       NOT NULL DEFAULT 1 COMMENT '商家ID（数据隔离）',
     session_id    VARCHAR(64)  NOT NULL,
     thread_id     VARCHAR(64)  NULL,
     role          VARCHAR(16)  NOT NULL COMMENT 'human|ai',
@@ -27,6 +28,7 @@ CREATE TABLE IF NOT EXISTS agent_chat_log (
     token_total   INT          NOT NULL DEFAULT 0,
     created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_session_created (session_id, created_at),
+    INDEX idx_merchant_created (merchant_id, created_at),
     INDEX idx_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT='Agent 对话日志';
@@ -59,13 +61,14 @@ async def append_chat_log(
     if not content or not str(content).strip():
         return
     sql = """
-        INSERT INTO agent_chat_log (session_id, thread_id, role, content, token_total)
-        VALUES (%s, %s, %s, %s, %s)
+        INSERT INTO agent_chat_log (merchant_id, session_id, thread_id, role, content, token_total)
+        VALUES (%s, %s, %s, %s, %s, %s)
     """
     try:
         await execute_write(
             sql,
             (
+                settings.MERCHANT_ID,
                 session_id,
                 thread_id or None,
                 role,

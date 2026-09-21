@@ -78,11 +78,12 @@ async def anomaly_detection(
                    COUNT(*) AS total_orders,
                    SUM(CASE WHEN status = 6 THEN 1 ELSE 0 END) AS cancelled
             FROM orders
-            WHERE DATE(order_time) BETWEEN %s AND %s
+            WHERE merchant_id = %s
+              AND DATE(order_time) BETWEEN %s AND %s
             GROUP BY DATE(order_time)
             ORDER BY order_date
         """
-        rows = await execute_query(sql, (start.isoformat(), today.isoformat()))
+        rows = await execute_query(sql, (settings.MERCHANT_ID, start.isoformat(), today.isoformat()))
         if not rows:
             return f"最近 {days} 天没有数据。"
 
@@ -95,11 +96,12 @@ async def anomaly_detection(
             SELECT DATE(order_time) AS order_date, COUNT(*) AS cnt
             FROM orders
             WHERE status IN (3, 4, 5)
+              AND merchant_id = %s
               AND DATE(order_time) BETWEEN %s AND %s
             GROUP BY DATE(order_time)
             ORDER BY order_date
         """
-        rows = await execute_query(sql, (start.isoformat(), today.isoformat()))
+        rows = await execute_query(sql, (settings.MERCHANT_ID, start.isoformat(), today.isoformat()))
         if not rows:
             return f"最近 {days} 天没有数据。"
 
@@ -113,11 +115,12 @@ async def anomaly_detection(
                    COALESCE(AVG(amount), 0) AS avg_amount
             FROM orders
             WHERE status IN (3, 4, 5)
+              AND merchant_id = %s
               AND DATE(order_time) BETWEEN %s AND %s
             GROUP BY DATE(order_time)
             ORDER BY order_date
         """
-        rows = await execute_query(sql, (start.isoformat(), today.isoformat()))
+        rows = await execute_query(sql, (settings.MERCHANT_ID, start.isoformat(), today.isoformat()))
         if not rows:
             return f"最近 {days} 天没有数据。"
 
@@ -131,11 +134,12 @@ async def anomaly_detection(
                    COALESCE(SUM(amount), 0) AS total
             FROM orders
             WHERE status IN (3, 4, 5)
+              AND merchant_id = %s
               AND DATE(order_time) BETWEEN %s AND %s
             GROUP BY DATE(order_time)
             ORDER BY order_date
         """
-        rows = await execute_query(sql, (start.isoformat(), today.isoformat()))
+        rows = await execute_query(sql, (settings.MERCHANT_ID, start.isoformat(), today.isoformat()))
         if not rows:
             return f"最近 {days} 天没有数据。"
 

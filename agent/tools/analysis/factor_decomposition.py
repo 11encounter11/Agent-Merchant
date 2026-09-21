@@ -20,6 +20,7 @@ from datetime import date, timedelta
 
 from langchain_core.tools import tool
 from db.database import execute_query
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -66,10 +67,11 @@ async def factor_decomposition(
             COALESCE(AVG(amount), 0) AS avg_amount
         FROM orders
         WHERE status IN (3, 4, 5)
+          AND merchant_id = %s
           AND DATE(order_time) BETWEEN %s AND %s
     """
-    current = await execute_query(sql, (begin_date, end_date))
-    previous = await execute_query(sql, (compare_begin_date, compare_end_date))
+    current = await execute_query(sql, (settings.MERCHANT_ID, begin_date, end_date))
+    previous = await execute_query(sql, (settings.MERCHANT_ID, compare_begin_date, compare_end_date))
 
     if not current or not previous:
         return "数据不足，无法进行因子分解。"
@@ -104,12 +106,13 @@ async def factor_decomposition(
         JOIN category c ON d.category_id = c.id
         JOIN orders o ON od.order_id = o.id
         WHERE o.status IN (3, 4, 5)
+          AND o.merchant_id = %s
           AND DATE(o.order_time) BETWEEN %s AND %s
         GROUP BY c.id, c.name
         ORDER BY category_amount DESC
     """
-    cur_categories = await execute_query(sql_category, (begin_date, end_date))
-    prev_categories = await execute_query(sql_category, (compare_begin_date, compare_end_date))
+    cur_categories = await execute_query(sql_category, (settings.MERCHANT_ID, begin_date, end_date))
+    prev_categories = await execute_query(sql_category, (settings.MERCHANT_ID, compare_begin_date, compare_end_date))
 
     # 构建分类对比
     prev_cat_map = {r["category_name"]: float(r["category_amount"]) for r in prev_categories} if prev_categories else {}
