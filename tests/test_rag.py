@@ -68,26 +68,21 @@ def test_load_json_keeps_source_and_skips_chunk_when_short():
         assert kb._all_documents[0]["chunk_id"] == "holidays_0"
 
 
-def test_load_long_txt_chunks():
+def test_load_long_txt_chunks(monkeypatch):
     import tempfile
     from pathlib import Path
     from config import settings
 
+    monkeypatch.setattr(settings, "RAG_CHUNK_SIZE", 400)
+    monkeypatch.setattr(settings, "RAG_CHUNK_OVERLAP", 40)
     with tempfile.TemporaryDirectory() as raw:
         data_dir = Path(raw)
         (data_dir / "wiki.txt").write_text("乙" * 1200, encoding="utf-8")
         kb = KnowledgeBase(enable_vector=False)
-        old_size, old_overlap = settings.RAG_CHUNK_SIZE, settings.RAG_CHUNK_OVERLAP
-        settings.RAG_CHUNK_SIZE = 400
-        settings.RAG_CHUNK_OVERLAP = 40
-        try:
-            kb.load_data(str(data_dir))
-            assert len(kb._all_documents) > 1
-            assert all(d["source"] == "wiki" for d in kb._all_documents)
-            assert any("_c" in d["chunk_id"] for d in kb._all_documents)
-        finally:
-            settings.RAG_CHUNK_SIZE = old_size
-            settings.RAG_CHUNK_OVERLAP = old_overlap
+        kb.load_data(str(data_dir))
+        assert len(kb._all_documents) > 1
+        assert all(d["source"] == "wiki" for d in kb._all_documents)
+        assert any("_c" in d["chunk_id"] for d in kb._all_documents)
 
 
 def test_compact_hits_drops_full_text():

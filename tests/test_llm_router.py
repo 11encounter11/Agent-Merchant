@@ -23,22 +23,14 @@ def test_complex_intent_uses_large_model():
     assert resolve_llm_tier({"intent": "unknown", "confidence": 0.0}) == "large"
 
 
-def test_low_confidence_falls_back_to_large():
-    old = settings.LLM_ROUTE_FALLBACK_TO_LARGE
-    settings.LLM_ROUTE_FALLBACK_TO_LARGE = True
-    try:
-        assert resolve_llm_tier({"intent": "greeting", "confidence": 0.1}) == "large"
-    finally:
-        settings.LLM_ROUTE_FALLBACK_TO_LARGE = old
+def test_low_confidence_falls_back_to_large(monkeypatch):
+    monkeypatch.setattr(settings, "LLM_ROUTE_FALLBACK_TO_LARGE", True)
+    assert resolve_llm_tier({"intent": "greeting", "confidence": 0.1}) == "large"
 
 
-def test_disable_fallback_keeps_simple():
-    old = settings.LLM_ROUTE_FALLBACK_TO_LARGE
-    settings.LLM_ROUTE_FALLBACK_TO_LARGE = False
-    try:
-        assert resolve_llm_tier({"intent": "greeting", "confidence": 0.1}) == "simple"
-    finally:
-        settings.LLM_ROUTE_FALLBACK_TO_LARGE = old
+def test_disable_fallback_keeps_simple(monkeypatch):
+    monkeypatch.setattr(settings, "LLM_ROUTE_FALLBACK_TO_LARGE", False)
+    assert resolve_llm_tier({"intent": "greeting", "confidence": 0.1}) == "simple"
 
 
 def test_simple_model_defaults_to_large_name():
