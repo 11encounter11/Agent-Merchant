@@ -13,6 +13,7 @@ from agent.guards import (
     invoke_tool_guarded,
 )
 from config import settings
+from db.database import DBUnavailable
 
 
 def test_tool_step_quota():
@@ -64,3 +65,26 @@ def test_invoke_tool_idempotent_no_double_side_effect():
 def test_validate_missing_schema_ok():
     tool = _FakeTool()
     assert validate_tool_args(tool, {"anything": True}) is None
+
+
+class _DBDownTool:
+    """模拟查数工具遇到库不可用：execute_query 抛 DBUnavailable。"""
+
+    name = "business_report"
+    args_schema = None
+    calls = 0
+
+    async def ainvoke(self, args):
+        self.calls += 1
+        raise DBUnavailable("经营数据库暂时不可用（连接被拒）")
+
+
+def test_db_unavailable_is_not_retried_and_tells_model_the_truth():
+    """库不可用重试无意义：guards 3 次 × DB 层 3 次 = 9 次打库，且模型会被喂空数据。"""
+    tool = _DBDownTool()
+    out = asyncio.run(
+        invoke_tool_guarded(tool, "business_report", {"report_type": "daily"}, session_id="s1")
+    )
+    assert tool.calls == 1
+    assert "执行失败" in out
+    assert "暂时取不到" in out and "不要用 0" in out

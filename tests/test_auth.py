@@ -8,8 +8,9 @@ from api.routes import router
 from config import settings
 
 
-def _client(monkeypatch, token):
+def _client(monkeypatch, token, env="dev"):
     monkeypatch.setattr(settings, "AGENT_API_TOKEN", token)
+    monkeypatch.setattr(settings, "APP_ENV", env)
     app = FastAPI()
     app.include_router(router)
     return TestClient(app)
@@ -48,6 +49,34 @@ def test_api_ok_with_correct_token(monkeypatch):
         headers={"Authorization": "Bearer secret-token"},
     )
     assert resp.status_code == 200 and resp.json()["success"] is True
+
+
+def test_prod_without_token_fails_closed(monkeypatch):
+    """S14：prod 漏配 token 必须是「明确拒绝」，不能静默放行。"""
+    _fake_chat(monkeypatch)
+    client = _client(monkeypatch, "", env="prod")
+    assert client.post("/api/agent/chat", json={"message": "hi"}).status_code == 503
+    assert client.get("/api/agent/sessions").status_code == 503
+    # /health 不受影响：它就是给运维排查用的
+    assert client.get("/health").status_code == 200
+
+
+def test_prod_with_token_still_requires_bearer(monkeypatch):
+    _fake_chat(monkeypatch)
+    client = _client(monkeypatch, "secret-token", env="prod")
+    assert client.post("/api/agent/chat", json={"message": "hi"}).status_code == 401
+    ok = client.post(
+        "/api/agent/chat", json={"message": "hi"},
+        headers={"Authorization": "Bearer secret-token"},
+    )
+    assert ok.status_code == 200
+
+
+def test_health_reports_auth_mode(monkeypatch):
+    assert _client(monkeypatch, "").get("/health").json()["auth_mode"] == "dev-open"
+    assert _client(monkeypatch, "").get("/health").json()["env"] == "dev"
+    assert _client(monkeypatch, "", env="prod").get("/health").json()["auth_mode"] == "prod-closed"
+    assert _client(monkeypatch, "t").get("/health").json()["auth_mode"] == "token"
 
 
 def test_health_stays_open_and_reports_auth(monkeypatch):

@@ -14,6 +14,7 @@
 
 import json
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import List
@@ -27,12 +28,20 @@ logger = logging.getLogger(__name__)
 MAX_HISTORY = settings.MAX_HISTORY
 SESSION_DIR = Path(__file__).parent.parent.parent / "data" / "sessions"
 
+# session_id 会被拼进文件路径，必须过白名单：不含 . / \ 等分隔符
+# （API 层已用 schemas.SESSION_ID_PATTERN 校验；这里是最后一道防线）
+_SAFE_SESSION_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
 
 def _ensure_dir():
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _session_file(session_id: str) -> Path:
+    """会话 ID → 落盘路径；非法 ID 直接拒绝（防路径穿越/绝对路径覆盖）。"""
+    if not _SAFE_SESSION_ID.match(session_id or ""):
+        logger.error(f"[SessionMemory] 拒绝非法 session_id: {session_id!r}")
+        raise ValueError("非法 session_id：只允许字母、数字、下划线、短横线，长度 1-64")
     return SESSION_DIR / f"{session_id}.json"
 
 

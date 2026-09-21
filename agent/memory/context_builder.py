@@ -3,7 +3,8 @@
 
 做什么：
 - 组装发给 LLM 的完整上下文：[RAG 参考信息] + [会话历史] + [情境信息] + [当前输入]
-- 判断是否需要向量补齐（JSON keywords 始终检索，避免无用 embedding）
+- 把意图类型透传给知识库，由知识库决定要不要打 embedding 补向量
+  （策略与理由见 knowledge_base._vector_allowed）
 - 带回 rag_hits，便于日志 / SSE 标出命中来源与层级
 
 不做什么：
@@ -20,15 +21,6 @@ from agent.memory.session_memory import session_memory
 
 logger = logging.getLogger(__name__)
 
-# 触发向量补齐的关键词（JSON keywords 匹配始终执行，不依赖本列表）
-_KNOWLEDGE_TRIGGER_KW = [
-    "端午", "中秋", "国庆", "元旦", "春节", "清明", "劳动节", "五一", "节日", "节假日",
-    "素菜", "蔬菜", "荤菜", "烤鱼", "牛蛙", "汤", "蒸菜", "别名", "分类",
-    "你是谁", "你叫什么", "什么模型", "GPT", "ChatGPT", "谁开发",
-    "退款", "退单", "打折", "折扣",
-    "接单", "拒单", "停售", "起售", "写文案", "营销文案",
-]
-
 
 class ContextBuilder:
     """上下文组装器。"""
@@ -37,33 +29,33 @@ class ContextBuilder:
         self.kb = knowledge_base
         self.last_hits: list[dict] = []
 
-    def _needs_vector_search(self, query: str) -> bool:
-        """关键词不足时才打 embedding。"""
-        query_lower = query.lower()
-        return any(kw in query_lower for kw in _KNOWLEDGE_TRIGGER_KW)
-
-    def build_context(self, session_id: str, user_input: str) -> List[BaseMessage]:
+    def build_context(
+        self, session_id: str, user_input: str, intent_type: str = ""
+    ) -> List[BaseMessage]:
         """同步组装（读文件历史）。"""
         history = session_memory.get_history(session_id)
-        messages, _ = self._assemble(session_id, user_input, history)
+        messages, _ = self._assemble(session_id, user_input, history, intent_type)
         return messages
 
     async def abuild_context(
-        self, session_id: str, user_input: str
+        self, session_id: str, user_input: str, intent_type: str = ""
     ) -> Tuple[List[BaseMessage], list]:
         """异步组装，返回 (messages, rag_hits)。"""
         history = await session_memory.aget_history(session_id)
-        return self._assemble(session_id, user_input, history)
+        return self._assemble(session_id, user_input, history, intent_type)
 
     def _assemble(
-        self, session_id: str, user_input: str, history: List[BaseMessage]
+        self,
+        session_id: str,
+        user_input: str,
+        history: List[BaseMessage],
+        intent_type: str = "",
     ) -> Tuple[List[BaseMessage], list]:
         messages = list(history)
         rag_hits: list = []
 
         if self.kb:
-            use_vector = self._needs_vector_search(user_input)
-            rag_hits = self.kb.search_hits(user_input, use_vector=use_vector)
+            rag_hits = self.kb.search_hits(user_input, intent_type=intent_type)
             if rag_hits:
                 knowledge_text = self.kb.format_context(rag_hits)
                 messages.insert(0, HumanMessage(content=f"[参考信息]\n{knowledge_text}"))
@@ -72,6 +64,6 @@ class ContextBuilder:
         messages.append(HumanMessage(content=user_input))
         logger.info(
             f"[ContextBuilder] session={session_id} messages={len(messages)} "
-            f"rag_hits={len(rag_hits)}"
+            f"rag_hits={len(rag_hits)} layers={[h.get('layer') for h in rag_hits]}"
         )
         return messages, rag_hits

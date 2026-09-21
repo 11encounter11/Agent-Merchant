@@ -19,6 +19,16 @@ _QUERY_TIMEOUT = 30
 _MAX_RETRIES = 2
 
 
+class DBUnavailable(RuntimeError):
+    """数据库/连接池不可用（区别于「查到了 0 行」）。
+
+    为什么要有这个类型：查数工具返回空列表时，模型会把它当成
+    「这段时间没有订单」照常输出结论——把「取不到数据」说成「没有数据」
+    就是幻觉的入口。所有重试都失败时必须抛这个异常，让带「工具执行失败」
+    标记的 ToolMessage 回到模型，由模型如实告知用户。
+    """
+
+
 async def get_pool() -> aiomysql.Pool:
     """懒加载全局连接池。"""
     global _pool
@@ -54,6 +64,11 @@ async def execute_query(sql: str, params: tuple = None) -> list[dict]:
 
     支持：超时控制 + 自动重试（最多 _MAX_RETRIES 次）。
     慢查询日志：超过 3 秒的查询会记录警告。
+
+    失败语义（重要）：
+    - 查询成功但没有行 → 返回 []
+    - 重试全部失败（库挂了/超时/连接被拒）→ 抛 DBUnavailable
+    调用方不得把两者混为一谈。
     """
     last_error = None
 
@@ -88,7 +103,7 @@ async def execute_query(sql: str, params: tuple = None) -> list[dict]:
             await asyncio.sleep(wait)
 
     logger.error(f"[DB] 查询最终失败，重试{_MAX_RETRIES}次后放弃: {last_error}")
-    return []
+    raise DBUnavailable(f"经营数据库暂时不可用（{last_error}）")
 
 
 async def execute_write(sql: str, params: tuple = None) -> int:

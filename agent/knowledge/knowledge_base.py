@@ -4,18 +4,29 @@ RAG 知识库（命中来源可观测）
 混合检索：JSON 关键词匹配 + chromadb 向量补齐。规则只维护在 data/*.json。
 不换 Milvus：当前文档量小，Chroma 内存库足够；换库解决不了「召回不准先改哪层」。
 
+向量腿策略（为什么要挑意图）：
+- 关键词层零成本、可解释；向量层要打 embedding（花钱、加延迟）。
+- 但只按触发词表开向量腿，等于「换个说法问就永远召不回」——所以补齐条件改为：
+  非数据类意图 && 关键词命中不足 &&（触发词命中 或 知识类意图 或 关键词零命中）。
+- 数据类意图（query_analysis / query_report）不补：把知识片段塞进「今天营业额多少」
+  的分析上下文只会污染结论。
+
 召回不准时由近到远改：
-1. 查询 / 触发：搜错场景 → 改 context_builder 触发词或用户问法
+1. 查询 / 触发：搜错场景 → 改本文件 VECTOR_TRIGGER_KW 或引导用户问法
 2. 关键词层：JSON keywords 漏配 → 补 keywords（本仓库最常见）
 3. 向量层：embedding 失败或语义漂 → 查 Key / query，而不是换库
 4. 切片：只有长文才有意义；切太碎/太大调 RAG_CHUNK_SIZE
 5. 生成：命中对但模型没用上 → 改 Prompt
+
+验收：`python eval/run_retrieval_eval.py`（question → 期望来源，算 Recall@k / MRR）。
+改 keywords 或改这里的策略后必须重跑，否则调参不可证伪。
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +34,20 @@ from agent.knowledge.chunking import split_if_long
 from config import settings
 
 logger = logging.getLogger(__name__)
+
+# 数据类意图：不补向量（知识片段会污染数据分析结论）
+ANALYTIC_INTENTS = frozenset({"query_analysis", "query_report"})
+# 知识类意图：语义问法多，直接允许向量补齐
+KNOWLEDGE_INTENTS = frozenset({"knowledge", "greeting", "thanks"})
+
+# 观点词/场景词：出现即认为「可能是知识类问法」（JSON keywords 匹配始终执行，不依赖本列表）
+VECTOR_TRIGGER_KW = [
+    "端午", "中秋", "国庆", "元旦", "春节", "清明", "劳动节", "五一", "节日", "节假日",
+    "素菜", "蔬菜", "荤菜", "烤鱼", "牛蛙", "汤", "蒸菜", "别名", "分类",
+    "你是谁", "你叫什么", "什么模型", "GPT", "ChatGPT", "谁开发",
+    "退款", "退单", "打折", "折扣",
+    "接单", "拒单", "停售", "起售", "写文案", "营销文案",
+]
 
 
 def compact_hits(hits: list[dict]) -> list[dict]:
@@ -36,6 +61,7 @@ def compact_hits(hits: list[dict]) -> list[dict]:
             "score": h.get("score"),
             "matched_keyword": h.get("matched_keyword") or None,
             "chunk_id": h.get("chunk_id") or "",
+            "version": h.get("version") or "",
             "preview": text[:80],
         })
     return out
@@ -51,28 +77,64 @@ class KnowledgeBase:
         self.client = None
         self.collection = None
         self.last_hits: list[dict] = []
-        # R6 懒加载：import 期不做 chromadb/embedding/读盘，首次检索才初始化
+        # R6 懒加载：import 期不做 chromadb/embedding/读盘，首次检索（或启动预热）才初始化
         self._enable_vector = enable_vector
         self._ready = False
         self._loaded = False
+        # 向量初始化只尝试一次（失败就退回仅关键词，不每轮重试）
+        self._vector_attempted = False
+
+    # ---- 对外状态（供 /health、配置后台读取；不要从外部读私有字段） ----
+
+    def status(self) -> dict:
+        """运行时真实状态：开关声称值 vs 实际生效。"""
+        chunks = 0
+        if self.collection is not None:
+            try:
+                chunks = int(self.collection.count())
+            except Exception:
+                chunks = 0
+        return {
+            "vector_enabled": bool(self._enable_vector),
+            "vector_ready": bool(self._initialized),
+            "loaded": bool(self._loaded),
+            "documents": len(self._all_documents),
+            "chunks_in_index": chunks,
+            "ready": bool(self._ready),
+        }
+
+    def warmup(self) -> None:
+        """启动预热：把「读盘 + 建索引」的延迟从首个用户请求挪到服务启动。
+
+        阻塞函数（embedding 是同步 HTTP），由调用方放进线程池执行。
+        """
+        self._ensure_ready()
+        self.logger.info(f"[KnowledgeBase] 预热完成 status={self.status()}")
 
     def _ensure_ready(self) -> None:
         if self._ready:
             return
-        self._ready = True  # 先置位，失败也不反复重试（退回仅关键词会自然降级）
-        if self._enable_vector:
+        if self._enable_vector and not self._vector_attempted:
+            self._vector_attempted = True
             self._init_vector()
         if not self._loaded:
             self.load_data()
+        # 只有真的加载成功才置位：否则（如数据目录暂缺）下次调用允许重试，
+        # 而不是永久静默变成「无知识库」
+        if self._loaded:
+            self._ready = True
 
     def _init_vector(self) -> None:
+        embedding_key = settings.EMBEDDING_API_KEY or settings.LLM_API_KEY
+        if not embedding_key:
+            # 没有可用 Key 就彻底不做向量：不要退化成 chroma 默认 embedding
+            # （那会在首个请求里下载 ONNX 模型）
+            self.logger.warning("[KnowledgeBase] 未配置 EMBEDDING_API_KEY/LLM_API_KEY，仅关键词模式")
+            self._initialized = False
+            return
         try:
             import chromadb
             from chromadb.utils import embedding_functions
-
-            embedding_key = settings.EMBEDDING_API_KEY or settings.LLM_API_KEY
-            if not embedding_key:
-                raise ValueError("未配置 EMBEDDING_API_KEY / LLM_API_KEY")
 
             dashscope_ef = embedding_functions.OpenAIEmbeddingFunction(
                 api_key=embedding_key,
@@ -80,33 +142,32 @@ class KnowledgeBase:
                 model_name=settings.EMBEDDING_MODEL,
             )
 
-            self.client = chromadb.Client()
-            self.collection = self.client.create_collection(
+            # 持久化索引：避免每次重启重新 embedding 全量知识
+            index_path = settings.RAG_VECTOR_INDEX_PATH
+            if index_path:
+                os.makedirs(index_path, exist_ok=True)
+                self.client = chromadb.PersistentClient(path=index_path)
+            else:
+                self.client = chromadb.Client()
+
+            # get_or_create：索引已存在时复用（配合 upsert 幂等）
+            self.collection = self.client.get_or_create_collection(
                 name="agent_knowledge",
                 metadata={"description": "苍穹外卖 Agent 知识库"},
                 embedding_function=dashscope_ef,
             )
-            self.logger.info(
-                f"[KnowledgeBase] chromadb 初始化成功（{settings.EMBEDDING_MODEL}）"
-            )
             self._initialized = True
+            self.logger.info(
+                f"[KnowledgeBase] chromadb 就绪（{settings.EMBEDDING_MODEL}，path={index_path or '内存'}）"
+            )
         except ImportError:
             self.logger.warning("[KnowledgeBase] chromadb 未安装，知识库向量功能禁用")
             self.logger.warning("[KnowledgeBase] 请运行: pip install chromadb")
+            self._initialized = False
         except Exception as e:
-            self.logger.warning(f"[KnowledgeBase] embedding 初始化失败，退回默认: {e}")
-            try:
-                import chromadb
-
-                self.client = chromadb.Client()
-                self.collection = self.client.create_collection(
-                    name="agent_knowledge",
-                    metadata={"description": "苍穹外卖 Agent 知识库"},
-                )
-                self._initialized = True
-            except Exception as fallback_err:
-                self.logger.error(f"[KnowledgeBase] chromadb 初始化失败: {fallback_err}")
-                self._initialized = False
+            self.logger.warning(f"[KnowledgeBase] embedding 初始化失败，退回仅关键词: {e}")
+            self._initialized = False
+            self.collection = None
 
     def load_data(self, data_dir: str = None):
         """从 data/ 加载 JSON/TXT；长文按 RAG_CHUNK_SIZE 切片。"""
@@ -154,7 +215,9 @@ class KnowledgeBase:
                 batch_size = 10
                 for start in range(0, len(documents), batch_size):
                     end = start + batch_size
-                    self.collection.add(
+                    # upsert 而非 add：索引持久化后重启会重复索引同 id，
+                    # add 会抛「ID 已存在」→ 静默退回仅关键词
+                    self.collection.upsert(
                         documents=documents[start:end],
                         ids=ids[start:end],
                         metadatas=metadatas[start:end],
@@ -197,6 +260,8 @@ class KnowledgeBase:
                         documents=documents,
                         ids=ids,
                         metadatas=metadatas,
+                        title=str(item.get("name") or ""),
+                        version=str(item.get("version") or item.get("date") or ""),
                     )
         elif isinstance(data, dict):
             text = self._extract_text_from_dict(data)
@@ -209,6 +274,8 @@ class KnowledgeBase:
                     documents=documents,
                     ids=ids,
                     metadatas=metadatas,
+                    title=str(data.get("name") or ""),
+                    version=str(data.get("version") or ""),
                 )
 
     def _ingest_text(
@@ -221,6 +288,8 @@ class KnowledgeBase:
         documents: list,
         ids: list,
         metadatas: list,
+        title: str = "",
+        version: str = "",
     ) -> None:
         pieces = split_if_long(
             text,
@@ -233,14 +302,28 @@ class KnowledgeBase:
                 if len(pieces) == 1
                 else f"{source}_{item_index}_c{ci}"
             )
+            meta = {
+                "source": source,
+                "document_id": source,
+                "chunk_id": chunk_id,
+            }
+            # 结构化定位信息：条目名 / 版本（生效日期）——没有它就无法回答
+            # 「这条规定是哪一版」，规定类知识一旦改版就会把旧版当现行
+            if title:
+                meta["title"] = title
+            if version:
+                meta["version"] = version
             documents.append(piece)
             ids.append(chunk_id)
-            metadatas.append({"source": source, "chunk_id": chunk_id})
+            metadatas.append(meta)
             self._all_documents.append({
                 "text": piece,
                 "keywords": keywords,
                 "source": source,
+                "document_id": source,
                 "chunk_id": chunk_id,
+                "title": title,
+                "version": version,
             })
 
     def _extract_text_from_dict(self, data: dict) -> str:
@@ -271,9 +354,12 @@ class KnowledgeBase:
                     hits.append({
                         "text": text,
                         "source": doc.get("source") or "",
+                        "document_id": doc.get("document_id") or "",
                         "layer": "keyword",
                         "score": 1.0,
                         "chunk_id": doc.get("chunk_id") or "",
+                        "title": doc.get("title") or "",
+                        "version": doc.get("version") or "",
                         "matched_keyword": keyword,
                     })
                     self.logger.info(
@@ -285,27 +371,50 @@ class KnowledgeBase:
                 break
         return hits[:top_k]
 
+    def _vector_allowed(self, query: str, intent_type: str, hits: list[dict], top_k: int) -> bool:
+        """是否值得打一次 embedding 补向量。
+
+        代价视角：embedding 是一次外部调用（钱 + 延迟），所以只在「关键词层
+        已经不够用」且「问题确实像知识类」时才开；数据类意图一律不开，
+        否则知识片段会被当成参考信息塞进经营分析的上下文。
+        """
+        if not settings.RAG_VECTOR_BACKFILL:
+            return False
+        if intent_type in ANALYTIC_INTENTS:
+            return False
+        if not self._initialized or self.collection is None or len(hits) >= top_k:
+            return False
+        try:
+            if self.collection.count() == 0:
+                return False
+        except Exception:
+            return False
+        query_lower = query.lower()
+        if any(kw.lower() in query_lower for kw in VECTOR_TRIGGER_KW):
+            return True
+        if intent_type in KNOWLEDGE_INTENTS:
+            return True
+        # 关键词零命中且不是数据问题 → 语义兜底（换个说法问的唯一希望）
+        return not hits
+
     def search_hits(
         self,
         query: str,
         top_k: int | None = None,
         use_vector: bool = True,
+        intent_type: str = "",
     ) -> list[dict]:
         """
         混合检索，返回结构化命中：
         source / layer(keyword|vector) / score / chunk_id / matched_keyword / text
+
+        intent_type 用于决定要不要打 embedding（见 _vector_allowed）。
         """
         top_k = top_k if top_k is not None else settings.RAG_TOP_K
         hits = self.search_keyword_hits(query, top_k=top_k)
         seen = {h["text"] for h in hits}
 
-        if (
-            use_vector
-            and self._initialized
-            and self.collection is not None
-            and self.collection.count() > 0
-            and len(hits) < top_k
-        ):
+        if use_vector and self._vector_allowed(query, intent_type, hits, top_k):
             try:
                 remaining = top_k - len(hits)
                 vector_results = self.collection.query(
@@ -328,6 +437,14 @@ class KnowledgeBase:
                             score = round(1.0 / (1.0 + float(dist)), 4)
                         except (TypeError, ValueError):
                             score = None
+                    # 相似度下限：向量层永远能返回「最近的」chunk，
+                    # 但最近的可能是无关内容；低于下限的不注入 Prompt
+                    if score is not None and score < settings.RAG_VECTOR_MIN_SCORE:
+                        self.logger.info(
+                            f"[RAG] 向量命中低于阈值丢弃 score={score} "
+                            f"< {settings.RAG_VECTOR_MIN_SCORE}"
+                        )
+                        continue
                     chunk_id = (meta or {}).get("chunk_id") or (
                         ids[i] if i < len(ids) else ""
                     )
@@ -335,9 +452,12 @@ class KnowledgeBase:
                     hits.append({
                         "text": text,
                         "source": source,
+                        "document_id": (meta or {}).get("document_id") or source,
                         "layer": "vector",
                         "score": score,
                         "chunk_id": chunk_id,
+                        "title": (meta or {}).get("title") or "",
+                        "version": (meta or {}).get("version") or "",
                         "matched_keyword": "",
                     })
                     seen.add(text)
@@ -370,7 +490,11 @@ class KnowledgeBase:
                 source = item.get("source") or "unknown"
                 layer = item.get("layer") or "?"
                 kw = item.get("matched_keyword") or ""
+                title = item.get("title") or ""
+                version = item.get("version") or ""
                 extra = f" | 命中:{kw}" if kw else ""
+                extra += f" | 条目:{title}" if title else ""
+                extra += f" | 版本:{version}" if version else ""
                 text = item.get("text") or ""
                 formatted.append(f"{i}. [来源:{source} | 层:{layer}{extra}] {text}")
             else:

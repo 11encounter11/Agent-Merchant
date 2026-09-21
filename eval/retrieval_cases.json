@@ -1,0 +1,220 @@
+{
+  "_comment": "检索验收集：question → 期望来源（source = 知识 JSON 文件主干名）。改 keywords / 切片 / 向量策略后必须重跑 eval/run_retrieval_eval.py，否则调参不可证伪。",
+  "_sources": {
+    "holidays": "节假日日历（含日期/类型/影响）",
+    "dish_aliases": "菜品分类别名",
+    "faq": "常见问法处理规则",
+    "identity": "身份与模型口径",
+    "boundary": "越界请求处理"
+  },
+  "cases": [
+    {
+      "id": "H01",
+      "category": "节假日",
+      "question": "端午节放假几天？那几天生意会怎么样",
+      "expect_sources": ["holidays"],
+      "needs_vector": false,
+      "note": "字面含'端午'"
+    },
+    {
+      "id": "H02",
+      "category": "节假日",
+      "question": "国庆期间备货要加多少",
+      "expect_sources": ["holidays"],
+      "needs_vector": false,
+      "note": "字面含'国庆'"
+    },
+    {
+      "id": "H03",
+      "category": "节假日",
+      "question": "中秋节快到了，提前做点活动吗",
+      "expect_sources": ["holidays"],
+      "needs_vector": false,
+      "note": "字面含'中秋'"
+    },
+    {
+      "id": "H04",
+      "category": "节假日",
+      "question": "春节那周的单量有多高",
+      "expect_sources": ["holidays"],
+      "needs_vector": false,
+      "note": "字面含'春节'"
+    },
+    {
+      "id": "H05",
+      "category": "语义改写",
+      "question": "农历五月初五是什么时候",
+      "expect_sources": ["holidays"],
+      "needs_vector": true,
+      "note": "端午的语义问法，字面不含'端午'——只有向量腿能召回"
+    },
+    {
+      "id": "H06",
+      "category": "语义改写",
+      "question": "团圆节那几天要不要多备点货",
+      "expect_sources": ["holidays"],
+      "needs_vector": true,
+      "note": "中秋的语义问法"
+    },
+    {
+      "id": "H07",
+      "category": "语义改写",
+      "question": "11月11日线上有啥高峰",
+      "expect_sources": ["holidays"],
+      "needs_vector": true,
+      "note": "双十一的语义问法（字面日期）"
+    },
+    {
+      "id": "D01",
+      "category": "菜品别名",
+      "question": "素菜类在系统里对应哪个分类",
+      "expect_sources": ["dish_aliases"],
+      "needs_vector": false,
+      "note": "字面含'素菜'"
+    },
+    {
+      "id": "D02",
+      "category": "菜品别名",
+      "question": "绿叶菜怎么分类",
+      "expect_sources": ["dish_aliases"],
+      "needs_vector": false,
+      "note": "字面含'绿叶菜'"
+    },
+    {
+      "id": "D03",
+      "category": "菜品别名",
+      "question": "烤鱼属于哪个分类",
+      "expect_sources": ["dish_aliases"],
+      "needs_vector": false,
+      "note": "字面含'烤鱼'"
+    },
+    {
+      "id": "D04",
+      "category": "菜品别名",
+      "question": "汤类都有哪些菜",
+      "expect_sources": ["dish_aliases"],
+      "needs_vector": false,
+      "note": "字面含'汤'"
+    },
+    {
+      "id": "D05",
+      "category": "菜品别名",
+      "question": "蒸菜对应哪个分类名",
+      "expect_sources": ["dish_aliases"],
+      "needs_vector": false,
+      "note": "字面含'蒸菜'"
+    },
+    {
+      "id": "D06",
+      "category": "语义改写",
+      "question": "空巢老人点的那种清淡蔬菜怎么归到分类里",
+      "expect_sources": ["dish_aliases"],
+      "needs_vector": true,
+      "note": "素菜类的语义问法，需'蔬菜'语义匹配"
+    },
+    {
+      "id": "F01",
+      "category": "FAQ",
+      "question": "退款多不多",
+      "expect_sources": ["faq"],
+      "needs_vector": false,
+      "note": "字面含'退款'"
+    },
+    {
+      "id": "F02",
+      "category": "FAQ",
+      "question": "打折之后还能赚多少",
+      "expect_sources": ["faq"],
+      "needs_vector": false,
+      "note": "字面含'打折'"
+    },
+    {
+      "id": "F03",
+      "category": "FAQ",
+      "question": "这周的营业额能不能直接给我算出来",
+      "expect_sources": ["faq"],
+      "needs_vector": false,
+      "note": "字面含'这周'/'营业额'（原用例'最近怎么样'在 faq.json 无对应词，属用例写错）"
+    },
+    {
+      "id": "F04",
+      "category": "FAQ",
+      "question": "本月营业额对比上月",
+      "expect_sources": ["faq"],
+      "needs_vector": false,
+      "note": "字面含'本月'/'营业额'"
+    },
+    {
+      "id": "F05",
+      "category": "FAQ",
+      "question": "你好",
+      "expect_sources": ["faq"],
+      "needs_vector": false,
+      "note": "打招呼话术"
+    },
+    {
+      "id": "I01",
+      "category": "身份",
+      "question": "你是谁",
+      "expect_sources": ["identity"],
+      "needs_vector": false,
+      "note": "身份口径"
+    },
+    {
+      "id": "I02",
+      "category": "身份",
+      "question": "你用的是哪个模型",
+      "expect_sources": ["identity"],
+      "needs_vector": false,
+      "note": "字面含'模型'"
+    },
+    {
+      "id": "B01",
+      "category": "边界",
+      "question": "帮我写一篇营销文案",
+      "expect_sources": ["boundary"],
+      "needs_vector": false,
+      "note": "越界：写文案"
+    },
+    {
+      "id": "B02",
+      "category": "边界",
+      "question": "帮我把这个订单拒单了",
+      "expect_sources": ["boundary"],
+      "needs_vector": false,
+      "note": "越界：后台操作"
+    },
+    {
+      "id": "N01",
+      "category": "负例",
+      "question": "数据库连接池最大连接数是多少",
+      "expect_sources": [],
+      "needs_vector": false,
+      "note": "与知识库无关，必须零命中（防乱注入参考信息）"
+    },
+    {
+      "id": "N02",
+      "category": "负例",
+      "question": "帮我算一下 3 加 5 等于几",
+      "expect_sources": [],
+      "needs_vector": false,
+      "note": "无关注释"
+    },
+    {
+      "id": "N03",
+      "category": "负例",
+      "question": "Redis 挂了会怎么样",
+      "expect_sources": [],
+      "needs_vector": false,
+      "note": "无关注释"
+    },
+    {
+      "id": "N04",
+      "category": "负例",
+      "question": "这个月的成本结构如何",
+      "expect_sources": [],
+      "needs_vector": false,
+      "note": "分析类问题，不应注入知识片段（意图门禁）"
+    }
+  ]
+}

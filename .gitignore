@@ -26,3 +26,4 @@ eval/results/
 flow_graph_v3.png
 docs/flow_graph.png
 data/migrate_backup/
+data/chroma/

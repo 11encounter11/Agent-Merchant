@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "苍穹外卖-商家智能经营顾问"
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8100
+    # dev | prod。prod 下「鉴权配置缺失」= 拒绝服务，而不是放行（fail-closed）
+    APP_ENV: str = "dev"
     # S5 单一真值：/health、FastAPI 元信息、README 都以此为准
     APP_VERSION: str = "0.4.0"
 
@@ -47,6 +49,14 @@ class Settings(BaseSettings):
     RAG_CHUNK_SIZE: int = 500
     RAG_CHUNK_OVERLAP: int = 50
     RAG_TOP_K: int = 3
+    # 关键词命中不足时的向量补齐（数据类意图不补，避免知识命中污染分析上下文）
+    RAG_VECTOR_BACKFILL: bool = True
+    # 向量命中相似度下限（1/(1+距离)）；低于此值视为不相关，不注入 Prompt
+    RAG_VECTOR_MIN_SCORE: float = 0.45
+    # 持久化向量库目录（chromadb PersistentClient）：避免每次重启重新 embedding
+    RAG_VECTOR_INDEX_PATH: str = "data/chroma"
+    # 启动预热：把「加载知识 + 建索引」从首个用户请求挪到服务启动
+    RAG_VECTOR_PRELOAD: bool = True
 
     # ================================================================
     # MySQL 数据库（苍穹外卖 sky_take_out）
@@ -117,6 +127,13 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_PER_MINUTE: int = 30
     CHAT_LOG_ENABLED: bool = True
+
+    # ================================================================
+    # SSE
+    # ================================================================
+    # 心跳间隔（秒）：工具阶段没有字节下发时发 `: ping` 注释帧，
+    # 防止反向代理/网关按「连接空闲」掐断长连接
+    SSE_HEARTBEAT_SEC: float = 15.0
 
     # ================================================================
     # 安全（注入拦截 / 工具门禁 / API 鉴权 / CORS）

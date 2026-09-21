@@ -12,10 +12,10 @@
 |----|------|
 | 产品 | 管理端**商家经营顾问**（查数→诊断→建议），端口 **8100** |
 | 主链路 | **已完成**（analyst 真调工具 + JSON 知识注入 + 顾问文案） |
-| 工程能力 | 护栏 / Supervisor / Checkpointer / Redis+日志 / 路由+安全+评测 / RAG 来源可观测 / Langfuse / **Bearer 鉴权 + CORS 白名单 + 限流防绕过 + 输出泄露检测** |
-| **还债进度** | **B0 ✅ B1 ✅ B2 ✅ B3 ✅ B4 ✅ B5 ✅ B6(a–d) ✅ + P1/P3/P5 ✅ —— 还债计划全部完成**（明细 `docs/REDESIGN/04`） |
-| **下一个该做** | admin-web 前端适配（SSE `event:` 类型/error 事件/点赞点踩按钮/Token 头）；可选：加分项 2–7、Skill |
-| 测试基线 | `pytest -q` **125 passed**；`eval/run_eval.py` 15/15；商家隔离/反馈表已活库验证 |
+| 工程能力 | 护栏 / Supervisor / Checkpointer / Redis+日志 / 路由+安全+评测 / RAG 来源可观测 / Langfuse / **Bearer 鉴权 + CORS 白名单 + 限流防绕过 + 输出泄露检测** / **输入白名单（会话 ID 防路径穿越）+ SSE 心跳与反代防缓冲 + 落盘收尾（失败/中断也留痕）+ DB 不可用语义区分 + 向量索引持久化 + 检索评测（Recall@3/MRR）** |
+| **还债进度** | **B0 ✅ B1 ✅ B2 ✅ B3 ✅ B4 ✅ B5 ✅ B6(a–d) ✅ B7（复审修复 S6–S13）✅ + P1/P3/P5 ✅**（明细 `docs/REDESIGN/04` §4.1） |
+| **下一个该做** | ① admin-web 前端适配（SSE `event:` 类型 / `usage` 事件 / error 事件 / 点赞点踩 / Token 头）② 配 `EMBEDDING_API_KEY` 后跑 `eval/run_retrieval_eval.py --vector`，补上语义改写类召回（当前 3/22 缺口量化在案）③ 可选：加分项 2–7、Skill |
+| 测试基线 | `pytest -q` **154 passed**；`eval/run_eval.py` 15/15（意图/门禁/边界/注入）；`eval/run_retrieval_eval.py` 27 例 Recall@3 86.4% / MRR 1.0 / 负例 4/4（仅关键词层）；B7 各项另经活服务 + 双实例（DB 断开）实机验证 |
 | Git | 本地 `master` 已提交；**未配置 origin，未 push**（推送需先 `git remote add`） |
 | 前端 | `admin-web` 不在本仓库；配置 `AGENT_API_TOKEN` 后前端 `/api/*` 需带 Bearer 头 |
 
@@ -23,7 +23,8 @@
 
 | Commit | 说明 |
 |--------|------|
-| （本批） | 收尾：requirements 锁上界、删坏脚本、.env.example 补缺、文档终检 |
+| （本批·未提交） | B7 复审修复：会话 ID 白名单 / SSE 心跳+落盘收尾+usage / DBUnavailable / 向量索引持久化+metadata / 检索评测 27 例 / 文档同步 |
+| `cff0d11` | 收尾：requirements 锁上界、删坏脚本、.env.example 补缺、文档终检 |
 | `88958c1` | B6c+B6d：配置后台 1/2 级 + 对话反馈闭环（agent_feedback） |
 | `af2fbff` | B6b：SSE 事件类型化 + /resume 断点恢复端点 |
 | `f46869d` | B6a：merchant_id 商家隔离（迁移已执行、活库验证） |
@@ -90,7 +91,8 @@ Tool：**11 个**（analysis + business + external），见 `agent/tools/__init_
 | Langfuse | Callback 挂到图运行配置 | **已完成**（无 Key 跳过） |
 | 还债 B0–B5 | 安全/测试/真值/健壮/清码/文档 | **已完成**（见 `docs/REDESIGN/04` 批次表） |
 | Wiki / LlamaIndex | 有长文再考虑 | 默认跳过 |
-| B6：merchant_id 隔离、SSE 事件契约、/resume、配置后台、Skill/UI | 功能增强 | **下一批** |
+| B6：merchant_id 隔离、SSE 事件契约、/resume、配置后台、Skill/UI | 功能增强 | **已完成** |
+| B7：复审修复（路径穿越/流式留痕/DB 语义/SSE 心跳/向量腿与持久化/检索验收） | 复审后修复 | **已完成** |
 
 ## 出问题改哪个文件
 
@@ -109,6 +111,11 @@ Tool：**11 个**（analysis + business + external），见 `agent/tools/__init_
 | 越界没拦住 / 模型名漏出 | `workers/reflect.py`, `reflection.py` |
 | 死循环 / 超时 | `guards.py`（以及 analyst/execute_tools 里的调用点） |
 | 断点续跑 | `checkpointing.py`, `main.py` lifespan |
+| 会话 ID 被拒 / 400-422（穿越、超长） | `schemas/chat.py` 的 `SESSION_ID_PATTERN`（请求体）+ `api/routes.py` 的 `Path(pattern=)`（路径参数） |
+| 流式没数据 / 前端断流 / 没有 usage | `api/routes.py` 的 SSE 生产者-消费者与心跳；`agent/service.py:chat_stream` |
+| 落盘缺行（失败或中断的轮次） | `agent/service.py:_persist_turn`（四条路径统一收尾） |
+| 模型把「查不到」说成「没数据」 | `db/database.py:DBUnavailable` + `agent/guards.py` 的不重试分支 |
+| 知识召回不准 / 想调 keywords | `agent/knowledge/knowledge_base.py`（`_vector_allowed`、`RAG_VECTOR_MIN_SCORE`、data/*.json）+ 先跑 `eval/run_retrieval_eval.py` |
 
 新人共同必读（约 30 分钟）：`api/routes.py` → `agent/service.py` → `agent/graph.py`。然后只深读上表自己那一行。
 

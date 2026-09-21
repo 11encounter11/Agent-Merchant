@@ -16,8 +16,20 @@ Pydantic 会自动帮你校验数据：
 3. 自动生成 API 文档：FastAPI 会根据这些模型自动生成交互式文档
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Literal, Optional
+
+# ============================================================
+# 全局输入约束（单一真值）
+# ============================================================
+# 会话/线程 ID 会被用作文件名（data/sessions/<id>.json）、Redis key 与
+# LangGraph thread_id。只允许安全字符：不含 . / \ 等路径分隔符，
+# 防止「用户可控字符串 → 文件路径」的越权读写。空串按「未指定」处理。
+SESSION_ID_PATTERN = r"^[A-Za-z0-9_-]{0,64}$"
+# 单条消息长度上限：防超长输入打爆 token 预算与日志表
+MAX_MESSAGE_CHARS = 4000
+
+_SessionId = Field(default=None, pattern=SESSION_ID_PATTERN, max_length=64)
 
 
 # ============================================================
@@ -32,11 +44,11 @@ from typing import Literal, Optional
 class ChatRequest(BaseModel):
     """聊天请求。"""
 
-    message: str
+    message: str = Field(..., min_length=1, max_length=MAX_MESSAGE_CHARS)
     # 会话 ID：前端多轮对话；默认也用作 LangGraph thread_id
-    session_id: Optional[str] = None
+    session_id: Optional[str] = _SessionId
     # 可选：显式指定 checkpoint 线程（默认=session_id）
-    thread_id: Optional[str] = None
+    thread_id: Optional[str] = _SessionId
 
 
 class ChatResponse(BaseModel):
@@ -53,8 +65,8 @@ class ChatResponse(BaseModel):
 class ResumeRequest(BaseModel):
     """B6b 断点恢复请求：显式续跑上次未到 END 的线程。"""
 
-    thread_id: str
-    session_id: Optional[str] = None
+    thread_id: str = Field(..., pattern=SESSION_ID_PATTERN, max_length=64)
+    session_id: Optional[str] = _SessionId
 
 
 class ResumeResponse(BaseModel):
@@ -70,10 +82,10 @@ class ResumeResponse(BaseModel):
 class FeedbackRequest(BaseModel):
     """B6d：对某轮回复点赞/点踩。"""
 
-    session_id: str
-    thread_id: Optional[str] = None
+    session_id: str = Field(..., pattern=SESSION_ID_PATTERN, max_length=64)
+    thread_id: Optional[str] = _SessionId
     rating: Literal["up", "down"]
-    comment: Optional[str] = None
+    comment: Optional[str] = Field(default=None, max_length=500)
 
 
 class FeedbackResponse(BaseModel):

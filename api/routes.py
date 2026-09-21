@@ -6,16 +6,18 @@ FastAPI vs Spring Boot（仅接口层）：
   @RequestBody DTO            ≈  Pydantic ChatRequest
 """
 
+import asyncio
 import hmac
 import json
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request
 from fastapi.responses import StreamingResponse
 
 from config import settings
 from schemas.chat import (
+    SESSION_ID_PATTERN,
     ChatRequest,
     ChatResponse,
     FeedbackRequest,
@@ -45,21 +47,34 @@ async def _runtime_status() -> dict:
         "chat_log_enabled": settings.CHAT_LOG_ENABLED,
         "checkpoint_backend": settings.CHECKPOINT_BACKEND,
         "security_injection_enabled": settings.SECURITY_INJECTION_ENABLED,
-        "rag": {
-            "vector_enabled": knowledge_base._enable_vector,
-            "vector_ready": knowledge_base._initialized,
-            "loaded": knowledge_base._loaded,
-        },
+        # 走 knowledge_base.status()：模块边界内的字段变化不会悄悄改坏 /health 契约
+        "rag": knowledge_base.status(),
     }
 
 
 def require_auth(authorization: str = Header(default="")) -> None:
-    """B0-A2：/api/* 端点鉴权。AGENT_API_TOKEN 为空时放行（开发模式，启动已告警）。"""
+    """B0-A2 / B7-S14：/api/* 端点鉴权。
+
+    配置了 token → 必须带对的 Bearer；
+    没配置 → dev 放行（本机联调），prod 直接 503。
+    「没配置」不等于「不需要鉴权」：静默放行是 B0 之前最大的洞，
+    换成 fail-closed 后，漏配 token 的后果从「裸奔」变成「明确拒绝」。
+    """
     token = settings.AGENT_API_TOKEN
     if not token:
+        if _is_prod():
+            raise HTTPException(
+                status_code=503,
+                detail="服务未配置鉴权（prod 环境 fail-closed）：请设置 AGENT_API_TOKEN 或改用 APP_ENV=dev",
+            )
         return
     if not hmac.compare_digest(authorization.strip(), f"Bearer {token}"):
         raise HTTPException(status_code=401, detail="未授权：缺少或错误的 Bearer Token")
+
+
+def _is_prod() -> bool:
+    """APP_ENV=prod/production 视为生产环境（单一真值，供鉴权与启动日志共用）。"""
+    return str(settings.APP_ENV).strip().lower() in {"prod", "production"}
 
 
 def _client_ip(request: Request) -> str:
@@ -74,7 +89,12 @@ def _client_ip(request: Request) -> str:
 
 
 def _friendly_llm_error(exc: Exception) -> str:
-    """把 LLM/依赖异常转成可读中文提示。"""
+    """把 LLM/依赖异常转成可读中文提示。
+
+    不回显异常原文：异常串里常带内部 URL、驱动/请求细节，而错误路径是
+    绕过 reflect 输出清洗的（那层只清洗模型回复）。完整异常由调用方
+    logger.exception 落到服务端日志，客户端只拿可读结论。
+    """
     text = str(exc)
     if "FreeTierOnly" in text or "free quota has been exhausted" in text.lower():
         return (
@@ -85,7 +105,9 @@ def _friendly_llm_error(exc: Exception) -> str:
         return "LLM API Key 无效，请检查 .env 中的 LLM_API_KEY。"
     if "429" in text or "rate" in text.lower():
         return "LLM 请求过于频繁，请稍后再试。"
-    return f"服务处理失败：{text[:200]}"
+    if "DBUnavailable" in type(exc).__name__ or "数据库暂时不可用" in text:
+        return "暂时取不到经营数据（数据库不可用），请稍后重试。"
+    return "服务处理失败，请稍后重试；若持续失败请查看服务端日志。"
 
 
 _SECRET_FIELDS = frozenset({
@@ -102,7 +124,12 @@ async def health_check():
         "service": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "langfuse": tracing_ready(),
+        "env": settings.APP_ENV,
+        # 三种状态：token 已配 / dev 无鉴权 / prod 缺配置（此时 /api/* 一律 503）
         "auth_enabled": bool(settings.AGENT_API_TOKEN),
+        "auth_mode": (
+            "token" if settings.AGENT_API_TOKEN else ("prod-closed" if _is_prod() else "dev-open")
+        ),
         "runtime": await _runtime_status(),
     }
 
@@ -171,27 +198,64 @@ async def chat_stream(request: ChatRequest, http_request: Request, _auth: None =
 
     async def event_generator():
         yield _sse("session", {"type": "session", "session_id": session_id, "thread_id": thread_id})
+
+        # 生产者在独立任务里驱动图，消费者按心跳间隔下发 `: ping`。
+        # 为什么不用 wait_for 直接包 __anext__：超时会取消那次迭代，
+        # 把 CancelledError 打进图里，等于「心跳把请求打死了」。
+        queue: asyncio.Queue = asyncio.Queue()
+        _done = object()
+
+        async def produce():
+            try:
+                stream = await agent_chat_stream(
+                    request.message,
+                    session_id,
+                    thread_id=thread_id,
+                    client_ip=client_ip,
+                )
+                async for chunk in stream:
+                    await queue.put(chunk)
+            except Exception as e:
+                logger.exception("[API] chat_stream 失败: %s", e)
+                await queue.put({"type": "error", "message": _friendly_llm_error(e)})
+            finally:
+                await queue.put(_done)
+
+        producer = asyncio.create_task(produce())
         try:
-            stream = await agent_chat_stream(
-                request.message,
-                session_id,
-                thread_id=thread_id,
-                client_ip=client_ip,
-            )
-            async for chunk in stream:
-                if isinstance(chunk, dict):
-                    yield _sse(chunk.get("type") or "content", chunk)
+            while True:
+                try:
+                    item = await asyncio.wait_for(
+                        # 下限 1s：配置成 0/负数会让 wait_for 立刻超时 → 变成 ping 死循环
+                        queue.get(),
+                        timeout=max(1.0, float(settings.SSE_HEARTBEAT_SEC)),
+                    )
+                except asyncio.TimeoutError:
+                    yield ": ping\n\n"
+                    continue
+                if item is _done:
+                    break
+                if isinstance(item, dict):
+                    yield _sse(item.get("type") or "content", item)
                 else:
-                    yield _sse("content", {"type": "content", "content": chunk})
+                    yield _sse("content", {"type": "content", "content": item})
             yield _sse("done", {"type": "done"})
-        except Exception as e:
-            logger.exception("[API] chat_stream 失败: %s", e)
-            yield _sse("error", {"type": "error", "message": _friendly_llm_error(e)})
-            yield _sse("done", {"type": "done"})
+        finally:
+            # 客户端点停止/断网时不取消生产者：让它跑完并把这一轮落盘
+            # （会话记忆 + 对话日志）。代价是这次 LLM 调用会完成——换来
+            # 「中断的轮次也有权威记录」，比省一次调用更值。
+            if not producer.done():
+                logger.info("[API] 客户端断开，等待本轮收尾落盘 thread_id=%s", thread_id)
 
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            # 反代不缓冲：否则 token 是「攒够一块才吐」，流式体验变假
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
     )
 
 
@@ -240,8 +304,11 @@ async def list_sessions(_auth: None = Depends(require_auth)):
 
 
 @router.delete("/api/agent/sessions/{session_id}")
-async def delete_session(session_id: str, _auth: None = Depends(require_auth)):
-    """删除指定会话。"""
+async def delete_session(
+    session_id: str = Path(..., pattern=SESSION_ID_PATTERN, max_length=64),
+    _auth: None = Depends(require_auth),
+):
+    """删除指定会话（session_id 会拼成文件名，必须先过白名单）。"""
     from agent.memory.session_memory import session_memory
 
     session_memory.clear_history(session_id)

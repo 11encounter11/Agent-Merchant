@@ -23,7 +23,9 @@
 
 # 测试与评测
 .\venv\Scripts\python.exe -m pytest -q       # 单元测试
-.\venv\Scripts\python.exe eval\run_eval.py   # 离线行为评测（意图/门禁/注入）
+.\venv\Scripts\python.exe eval\run_eval.py   # 离线行为评测（意图/门禁/注入）15 例
+.\venv\Scripts\python.exe eval\run_retrieval_eval.py   # 检索质量（Recall@3 / MRR / 负例）27 例
+.\venv\Scripts\python.exe eval\run_retrieval_eval.py --vector   # 含向量腿（需 EMBEDDING_API_KEY）
 ```
 
 前端在 `admin-web` 仓库：`npm run serve` → `http://localhost:8888/#/agent`。

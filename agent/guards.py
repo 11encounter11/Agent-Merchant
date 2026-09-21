@@ -21,6 +21,7 @@ import time
 from typing import Any, Optional
 
 from config import settings
+from db.database import DBUnavailable
 from db.redis_client import get_redis
 
 logger = logging.getLogger(__name__)
@@ -171,6 +172,14 @@ async def invoke_tool_guarded(
         except asyncio.TimeoutError:
             last_err = f"超时（>{timeout}s）"
             logger.warning(f"[Guards] {tool_name} {last_err} attempt={attempt + 1}")
+        except DBUnavailable as e:
+            # 库不可用重试无意义：这里再重试会与 DB 层重试相乘（3×3=9 次打库）
+            logger.warning(f"[Guards] {tool_name} 数据库不可用，不再重试: {e}")
+            return (
+                f"工具 {tool_name} 执行失败：{e}。"
+                "请如实告知用户「暂时取不到经营数据，请稍后重试」，"
+                "不要用 0、空数据或估算值充当真实数据。"
+            )
         except Exception as e:
             last_err = e
             logger.warning(f"[Guards] {tool_name} 失败 attempt={attempt + 1}: {e}")

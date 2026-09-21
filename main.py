@@ -6,6 +6,7 @@
   或：python main.py
 """
 
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -32,6 +33,22 @@ def _interrupt_after_list() -> list[str] | None:
     return [x.strip() for x in raw.split(",") if x.strip()]
 
 
+async def _warmup_knowledge_base() -> None:
+    """启动预热知识库：读盘 + 建索引挪到启动期，别让首个用户请求替我们等。
+
+    to_thread 是必须的：chromadb 与 embedding 都是同步阻塞调用，直接在
+    事件循环里跑会把启动窗口内所有请求一起拖住。
+    """
+    if not settings.RAG_VECTOR_PRELOAD:
+        return
+    try:
+        from agent.knowledge.knowledge_base import knowledge_base
+
+        await asyncio.to_thread(knowledge_base.warmup)
+    except Exception as e:
+        logger.warning(f"[Main] 知识库预热失败（不影响启动，降级为关键词模式）: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """启动：挂 Checkpointer 并重编译图；关闭：释放资源。"""
@@ -40,7 +57,12 @@ async def lifespan(app: FastAPI):
     if not settings.DB_PASSWORD:
         logger.warning("[Main] DB_PASSWORD 未配置：查数类工具将不可用（.env 中设置）")
     if not settings.AGENT_API_TOKEN:
-        logger.warning("[Main] AGENT_API_TOKEN 未配置：/api/* 处于无鉴权开发模式")
+        if str(settings.APP_ENV).strip().lower() in {"prod", "production"}:
+            logger.error(
+                "[Main] AGENT_API_TOKEN 未配置且 APP_ENV=prod：/api/* 一律 503（fail-closed）"
+            )
+        else:
+            logger.warning("[Main] AGENT_API_TOKEN 未配置：/api/* 处于无鉴权开发模式（本机演示用）")
 
     import agent.graph as graph_mod
 
@@ -63,6 +85,7 @@ async def lifespan(app: FastAPI):
             logger.info(f"[Main] Checkpointer=sqlite path={db_path}")
             await ensure_chat_log_table()
             await ensure_feedback_table()
+            await _warmup_knowledge_base()
             yield
             flush_tracing()
             await close_redis()
@@ -75,6 +98,7 @@ async def lifespan(app: FastAPI):
         logger.info("[Main] Checkpointer=memory（重启丢失）")
         await ensure_chat_log_table()
         await ensure_feedback_table()
+        await _warmup_knowledge_base()
         yield
         flush_tracing()
         await close_redis()
