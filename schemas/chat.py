@@ -17,7 +17,7 @@ Pydantic 会自动帮你校验数据：
 """
 
 from pydantic import BaseModel
-from typing import Optional
+from typing import Literal, Optional
 
 
 # ============================================================
@@ -65,3 +65,17 @@ class ResumeResponse(BaseModel):
     message: str = ""
     session_id: str = ""
     thread_id: str = ""
+
+
+class FeedbackRequest(BaseModel):
+    """B6d：对某轮回复点赞/点踩。"""
+
+    session_id: str
+    thread_id: Optional[str] = None
+    rating: Literal["up", "down"]
+    comment: Optional[str] = None
+
+
+class FeedbackResponse(BaseModel):
+    success: bool
+    message: str = ""

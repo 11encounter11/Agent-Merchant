@@ -71,3 +71,12 @@ def reset_redis_for_tests():
     global _redis, _redis_failed
     _redis = None
     _redis_failed = False
+
+
+async def redis_status() -> dict:
+    """B6c：/health 与配置后台核对 Redis 开关是否真生效。"""
+    enabled = bool(settings.REDIS_ENABLED)
+    live = False
+    if enabled:
+        live = (await get_redis()) is not None
+    return {"enabled": enabled, "live": live, "degraded": enabled and not live}

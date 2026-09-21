@@ -15,7 +15,14 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from config import settings
-from schemas.chat import ChatRequest, ChatResponse, ResumeRequest, ResumeResponse
+from schemas.chat import (
+    ChatRequest,
+    ChatResponse,
+    FeedbackRequest,
+    FeedbackResponse,
+    ResumeRequest,
+    ResumeResponse,
+)
 from agent.observability import tracing_ready
 
 router = APIRouter()
@@ -25,6 +32,25 @@ logger = logging.getLogger(__name__)
 def _sse(event: str, data: dict) -> str:
     """B6b：SSE 帧带 event: 类型；data 内保留 type 字段兼容旧前端。"""
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+async def _runtime_status() -> dict:
+    """B6c：开关"声称值 + 实际生效状态"，供 /health 与配置后台核对。"""
+    from db.redis_client import redis_status
+    from agent.knowledge.knowledge_base import knowledge_base
+
+    return {
+        "redis": await redis_status(),
+        "rate_limit": {"enabled": settings.RATE_LIMIT_ENABLED, "per_minute": settings.RATE_LIMIT_PER_MINUTE},
+        "chat_log_enabled": settings.CHAT_LOG_ENABLED,
+        "checkpoint_backend": settings.CHECKPOINT_BACKEND,
+        "security_injection_enabled": settings.SECURITY_INJECTION_ENABLED,
+        "rag": {
+            "vector_enabled": knowledge_base._enable_vector,
+            "vector_ready": knowledge_base._initialized,
+            "loaded": knowledge_base._loaded,
+        },
+    }
 
 
 def require_auth(authorization: str = Header(default="")) -> None:
@@ -62,16 +88,36 @@ def _friendly_llm_error(exc: Exception) -> str:
     return f"服务处理失败：{text[:200]}"
 
 
+_SECRET_FIELDS = frozenset({
+    "LLM_API_KEY", "EMBEDDING_API_KEY", "WEATHER_API_KEY", "DB_PASSWORD",
+    "LANGFUSE_PUBLIC_KEY", "LANGFUSE_SECRET_KEY", "AGENT_API_TOKEN", "REDIS_URL",
+})
+
+
 @router.get("/health")
 async def health_check():
-    """健康检查。"""
+    """健康检查 + 关键开关生效状态（B6c 第 1 级）。"""
     return {
         "status": "ok",
         "service": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "langfuse": tracing_ready(),
         "auth_enabled": bool(settings.AGENT_API_TOKEN),
+        "runtime": await _runtime_status(),
     }
+
+
+@router.get("/api/admin/config")
+async def admin_config(_auth: None = Depends(require_auth)):
+    """B6c 第 2 级：只读脱敏配置 + 运行时状态。凭据类只暴露"是否已配置"，永不回显值。"""
+    plain, secrets = {}, {}
+    for name in type(settings).model_fields:
+        value = getattr(settings, name)
+        if name in _SECRET_FIELDS:
+            secrets[name] = bool(str(value).strip())
+        else:
+            plain[name] = value
+    return {"config": plain, "secrets_configured": secrets, "runtime": await _runtime_status()}
 
 
 @router.get("/")
@@ -165,6 +211,23 @@ async def chat_resume(request: ResumeRequest, _auth: None = Depends(require_auth
             session_id=request.session_id or request.thread_id,
             thread_id=request.thread_id,
         )
+
+
+@router.post("/api/agent/feedback", response_model=FeedbackResponse)
+async def chat_feedback(request: FeedbackRequest, _auth: None = Depends(require_auth)):
+    """B6d：对回复点赞/点踩（差评样本后续喂 eval 回归集）。"""
+    from db.feedback import append_feedback
+
+    ok = await append_feedback(
+        session_id=request.session_id,
+        rating=request.rating,
+        thread_id=request.thread_id or "",
+        comment=request.comment or "",
+    )
+    return FeedbackResponse(
+        success=ok,
+        message="" if ok else "反馈暂未保存（存储降级），感谢你的意见",
+    )
 
 
 @router.get("/api/agent/sessions")
