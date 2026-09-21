@@ -18,6 +18,7 @@ from fastapi.responses import StreamingResponse
 from config import settings
 from schemas.chat import (
     SESSION_ID_PATTERN,
+    ChatLogResponse,
     ChatRequest,
     ChatResponse,
     FeedbackRequest,
@@ -30,10 +31,20 @@ from agent.observability import tracing_ready
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# A7：per-thread 事件缓冲，供 Last-Event-ID 续播。
+# key=thread_id, value=list of (id, event, data_dict)。
+# 流结束后保留 60s 供迟到的重连取走，然后清理。
+_sse_buffers: dict[str, list[tuple[int, str, dict]]] = {}
+_SSE_BUFFER_TTL = 60
 
-def _sse(event: str, data: dict) -> str:
-    """B6b：SSE 帧带 event: 类型；data 内保留 type 字段兼容旧前端。"""
-    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+def _sse(event: str, data: dict, event_id: int | None = None) -> str:
+    """B6b + A7：SSE 帧带 event: 类型 + 可选 id: 字段。"""
+    lines = [f"event: {event}"]
+    if event_id is not None:
+        lines.append(f"id: {event_id}")
+    lines.append(f"data: {json.dumps(data, ensure_ascii=False)}")
+    return "\n".join(lines) + "\n\n"
 
 
 async def _runtime_status() -> dict:
@@ -188,20 +199,50 @@ async def chat(request: ChatRequest, http_request: Request, _auth: None = Depend
 
 
 @router.post("/api/agent/chat/stream")
-async def chat_stream(request: ChatRequest, http_request: Request, _auth: None = Depends(require_auth)):
-    """流式聊天（SSE）。"""
+async def chat_stream(
+    request: ChatRequest,
+    http_request: Request,
+    last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
+    _auth: None = Depends(require_auth),
+):
+    """流式聊天（SSE）。A7：每帧带 id:，支持 Last-Event-ID 续播。"""
     from agent.service import chat_stream as agent_chat_stream
 
     session_id = request.session_id or str(uuid.uuid4())
     thread_id = request.thread_id or session_id
     client_ip = _client_ip(http_request)
 
-    async def event_generator():
-        yield _sse("session", {"type": "session", "session_id": session_id, "thread_id": thread_id})
+    # A7：如果客户端带了 Last-Event-ID，先回放缓冲里漏掉的事件
+    resume_from = 0
+    if last_event_id and thread_id in _sse_buffers:
+        try:
+            resume_from = int(last_event_id)
+        except ValueError:
+            resume_from = 0
 
-        # 生产者在独立任务里驱动图，消费者按心跳间隔下发 `: ping`。
-        # 为什么不用 wait_for 直接包 __anext__：超时会取消那次迭代，
-        # 把 CancelledError 打进图里，等于「心跳把请求打死了」。
+    async def event_generator():
+        nonlocal resume_from
+
+        # 回放缓冲中客户端漏掉的事件
+        if resume_from > 0 and thread_id in _sse_buffers:
+            buf = _sse_buffers[thread_id]
+            for eid, ev, d in buf:
+                if eid > resume_from:
+                    yield _sse(ev, d, event_id=eid)
+            # 如果缓冲里已经有 done 事件，说明流已结束，直接收尾
+            if any(ev == "done" for _, ev, _ in buf):
+                return
+
+        # 新流：初始化缓冲 + 发 session 帧（带 retry 提示）
+        buf: list[tuple[int, str, dict]] = []
+        _sse_buffers[thread_id] = buf
+        seq = 0
+
+        seq += 1
+        session_data = {"type": "session", "session_id": session_id, "thread_id": thread_id}
+        buf.append((seq, "session", session_data))
+        yield f"retry: 3000\n" + _sse("session", session_data, event_id=seq)
+
         queue: asyncio.Queue = asyncio.Queue()
         _done = object()
 
@@ -226,7 +267,6 @@ async def chat_stream(request: ChatRequest, http_request: Request, _auth: None =
             while True:
                 try:
                     item = await asyncio.wait_for(
-                        # 下限 1s：配置成 0/负数会让 wait_for 立刻超时 → 变成 ping 死循环
                         queue.get(),
                         timeout=max(1.0, float(settings.SSE_HEARTBEAT_SEC)),
                     )
@@ -235,24 +275,33 @@ async def chat_stream(request: ChatRequest, http_request: Request, _auth: None =
                     continue
                 if item is _done:
                     break
+                seq += 1
                 if isinstance(item, dict):
-                    yield _sse(item.get("type") or "content", item)
+                    ev_type = item.get("type") or "content"
+                    buf.append((seq, ev_type, item))
+                    yield _sse(ev_type, item, event_id=seq)
                 else:
-                    yield _sse("content", {"type": "content", "content": item})
-            yield _sse("done", {"type": "done"})
+                    content_data = {"type": "content", "content": item}
+                    buf.append((seq, "content", content_data))
+                    yield _sse("content", content_data, event_id=seq)
+            seq += 1
+            done_data = {"type": "done"}
+            buf.append((seq, "done", done_data))
+            yield _sse("done", done_data, event_id=seq)
         finally:
-            # 客户端点停止/断网时不取消生产者：让它跑完并把这一轮落盘
-            # （会话记忆 + 对话日志）。代价是这次 LLM 调用会完成——换来
-            # 「中断的轮次也有权威记录」，比省一次调用更值。
             if not producer.done():
                 logger.info("[API] 客户端断开，等待本轮收尾落盘 thread_id=%s", thread_id)
+            # A7：缓冲保留 TTL 秒供迟到的重连取走，然后清理
+            async def _cleanup():
+                await asyncio.sleep(_SSE_BUFFER_TTL)
+                _sse_buffers.pop(thread_id, None)
+            asyncio.create_task(_cleanup())
 
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
-            # 反代不缓冲：否则 token 是「攒够一块才吐」，流式体验变假
             "X-Accel-Buffering": "no",
             "Connection": "keep-alive",
         },
@@ -313,3 +362,17 @@ async def delete_session(
 
     session_memory.clear_history(session_id)
     return {"success": True, "message": f"会话 {session_id} 已删除"}
+
+
+@router.get("/api/agent/sessions/{session_id}/logs", response_model=ChatLogResponse)
+async def session_logs(
+    session_id: str = Path(..., pattern=SESSION_ID_PATTERN, max_length=64),
+    limit: int = 50,
+    offset: int = 0,
+    _auth: None = Depends(require_auth),
+):
+    """B8：读取指定会话的历史日志（分页）。"""
+    from db.chat_log import list_session_logs
+
+    result = await list_session_logs(session_id, limit=limit, offset=offset)
+    return ChatLogResponse(**result)

@@ -91,3 +91,19 @@ class FeedbackRequest(BaseModel):
 class FeedbackResponse(BaseModel):
     success: bool
     message: str = ""
+
+
+class ChatLogEntry(BaseModel):
+    """B8：单条对话日志。"""
+    id: int
+    thread_id: Optional[str] = None
+    role: str
+    content: str
+    token_total: int = 0
+    created_at: str = ""
+
+
+class ChatLogResponse(BaseModel):
+    """B8：会话历史日志（分页）。"""
+    logs: list[ChatLogEntry]
+    total: int

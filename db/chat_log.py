@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 
 from config import settings
-from db.database import execute_write
+from db.database import execute_query, execute_write
 
 logger = logging.getLogger(__name__)
 
@@ -78,3 +78,39 @@ async def append_chat_log(
         )
     except Exception as e:
         logger.warning(f"[ChatLog] 写入失败（已忽略）: {e}")
+
+
+async def list_session_logs(
+    session_id: str,
+    *,
+    limit: int = 50,
+    offset: int = 0,
+) -> dict:
+    """B8：按 session_id 拉历史日志（分页）。
+
+    返回 {"logs": [...], "total": int}。
+    DB 不可用时返回空列表 + total=0（日志查询是非关键路径，不抛异常）。
+    """
+    if not settings.CHAT_LOG_ENABLED:
+        return {"logs": [], "total": 0}
+    try:
+        count_rows = await execute_query(
+            "SELECT COUNT(*) AS cnt FROM agent_chat_log WHERE session_id = %s",
+            (session_id,),
+        )
+        total = count_rows[0]["cnt"] if count_rows else 0
+        rows = await execute_query(
+            """SELECT id, thread_id, role, content, token_total, created_at
+               FROM agent_chat_log
+               WHERE session_id = %s
+               ORDER BY created_at ASC
+               LIMIT %s OFFSET %s""",
+            (session_id, limit, offset),
+        )
+        for r in rows:
+            if r.get("created_at"):
+                r["created_at"] = str(r["created_at"])
+        return {"logs": rows, "total": total}
+    except Exception as e:
+        logger.warning(f"[ChatLog] 查询失败（已忽略）: {e}")
+        return {"logs": [], "total": 0}
