@@ -18,6 +18,8 @@ import logging
 import re
 from datetime import datetime
 
+from agent.constants import BOUNDARY_KW as _BOUNDARY_KW
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,11 +52,7 @@ _KNOWLEDGE_KW = [
     "节假日有哪些", "法定节假日",
 ]
 
-# 边界类（直接拒绝）
-_BOUNDARY_KW = [
-    "写文案", "写文章", "写报告", "翻译", "写代码", "写诗",
-    "营销文案", "朋友圈", "小红书",
-]
+# 边界类（直接拒绝）：关键词见 agent.constants.BOUNDARY_KW（单一真值，与 reflection 共用）
 
 
 def preprocess(user_input: str) -> str:

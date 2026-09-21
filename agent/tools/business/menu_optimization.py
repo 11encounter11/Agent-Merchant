@@ -15,10 +15,9 @@ from datetime import date, timedelta
 
 from langchain_core.tools import tool
 from db.database import execute_query
+from config import settings
 
 logger = logging.getLogger(__name__)
-
-_DEFAULT_COST_RATIO = 0.35
 
 
 @tool
@@ -56,7 +55,7 @@ async def menu_optimization(days: int = 30) -> str:
         GROUP BY d.id, d.name, c.name, d.price, d.cost
         ORDER BY total_revenue DESC
     """
-    rows = await execute_query(sql, (_DEFAULT_COST_RATIO, start.isoformat(), today.isoformat()))
+    rows = await execute_query(sql, (settings.COST_RATIO_DEFAULT, start.isoformat(), today.isoformat()))
 
     if not rows:
         return f"最近 {days} 天没有销售数据。"

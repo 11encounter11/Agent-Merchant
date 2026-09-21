@@ -14,6 +14,7 @@
 import logging
 import re
 
+from agent.constants import BOUNDARY_KW as _BOUNDARY_KW
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -137,10 +138,3 @@ def _check_boundary(response: str, user_input: str) -> str:
             )
 
     return response
-
-
-# 边界关键词（和 perception.py 共享，但这里用于输出校验）
-_BOUNDARY_KW = [
-    "写文案", "写文章", "翻译", "写代码", "写诗",
-    "营销文案", "朋友圈", "小红书",
-]

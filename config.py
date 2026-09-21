@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     APP_NAME: str = "苍穹外卖-商家智能经营顾问"
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8100
+    # S5 单一真值：/health、FastAPI 元信息、README 都以此为准
+    APP_VERSION: str = "0.4.0"
 
     # ================================================================
     # LLM 配置（支持多模型切换）
@@ -73,6 +75,8 @@ class Settings(BaseSettings):
     ANOMALY_THRESHOLD: float = 0.2
     CORRELATION_SIGNIFICANT: float = 0.5
     FORECAST_CONFIDENCE: float = 0.8
+    # S4 单一真值：数据库无成本字段时的估算成本率（cost_profit/menu/promotion 共用）
+    COST_RATIO_DEFAULT: float = 0.35
 
     # ================================================================
     # 工程护栏（防死循环 / 预算 / 工具稳健性）

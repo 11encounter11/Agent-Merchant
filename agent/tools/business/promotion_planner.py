@@ -16,10 +16,9 @@ from datetime import date, timedelta
 
 from langchain_core.tools import tool
 from db.database import execute_query
+from config import settings
 
 logger = logging.getLogger(__name__)
-
-_DEFAULT_COST_RATIO = 0.35
 
 
 @tool
@@ -61,7 +60,7 @@ async def promotion_planner(
         WHERE o.status IN (3, 4, 5)
           AND DATE(o.order_time) BETWEEN %s AND %s
     """
-    params = [_DEFAULT_COST_RATIO, start.isoformat(), today.isoformat()]
+    params = [settings.COST_RATIO_DEFAULT, start.isoformat(), today.isoformat()]
     if category_name:
         sql += " AND c.name = %s"
         params.append(category_name)

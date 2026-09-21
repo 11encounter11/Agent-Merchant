@@ -20,10 +20,9 @@ import httpx
 from langchain_openai import ChatOpenAI
 
 from config import settings
+from agent.constants import SIMPLE_INTENTS  # S2 单一真值：与 security 共用
 
 logger = logging.getLogger(__name__)
-
-SIMPLE_INTENTS = frozenset({"greeting", "thanks", "knowledge"})
 
 # (tier, model, bind_key) → ChatOpenAI | RunnableBinding
 _llm_cache: dict[tuple, Any] = {}

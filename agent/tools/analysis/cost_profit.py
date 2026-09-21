@@ -16,11 +16,9 @@ from datetime import date, timedelta
 
 from langchain_core.tools import tool
 from db.database import execute_query
+from config import settings
 
 logger = logging.getLogger(__name__)
-
-# 默认成本率（当数据库没有成本数据时的估算值）
-_DEFAULT_COST_RATIO = 0.35
 
 
 @tool
@@ -86,10 +84,10 @@ async def cost_profit_analysis(
         WHERE o.status IN (3, 4, 5)
           AND DATE(o.order_time) BETWEEN %s AND %s
     """
-    dish_params = (_DEFAULT_COST_RATIO, start.isoformat(), today.isoformat())
+    dish_params = (settings.COST_RATIO_DEFAULT, start.isoformat(), today.isoformat())
     if category_name:
         sql_dish += " AND c.name = %s"
-        dish_params = (_DEFAULT_COST_RATIO, start.isoformat(), today.isoformat(), category_name)
+        dish_params = (settings.COST_RATIO_DEFAULT, start.isoformat(), today.isoformat(), category_name)
 
     sql_dish += " GROUP BY d.id, d.name, c.name, d.price, d.cost ORDER BY total_revenue DESC LIMIT 20"
     dishes = await execute_query(sql_dish, dish_params)
@@ -105,7 +103,7 @@ async def cost_profit_analysis(
 
     for c in categories:
         revenue = float(c["total_revenue"])
-        cost_est = revenue * _DEFAULT_COST_RATIO
+        cost_est = revenue * settings.COST_RATIO_DEFAULT
         profit = revenue - cost_est
         margin = (profit / revenue * 100) if revenue > 0 else 0
         contribution = (revenue / total_revenue * 100) if total_revenue > 0 else 0
@@ -121,7 +119,7 @@ async def cost_profit_analysis(
     if dishes:
         lines.append("")
         lines.append(f"【菜品利润 TOP{min(20, len(dishes))}】")
-        lines.append(f"  （注：成本数据为估算值，成本率={_DEFAULT_COST_RATIO*100:.0f}%）")
+        lines.append(f"  （注：成本数据为估算值，成本率={settings.COST_RATIO_DEFAULT*100:.0f}%）")
         lines.append("")
 
         for d in dishes:

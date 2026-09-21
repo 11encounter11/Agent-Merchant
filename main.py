@@ -83,7 +83,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     description="面向外卖商家的智能经营助手 API",
-    version="0.4.0",
+    version=settings.APP_VERSION,
     lifespan=lifespan,
 )
 

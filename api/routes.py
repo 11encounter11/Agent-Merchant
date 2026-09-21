@@ -63,7 +63,7 @@ async def health_check():
     return {
         "status": "ok",
         "service": settings.APP_NAME,
-        "version": "0.1.0",
+        "version": settings.APP_VERSION,
         "langfuse": tracing_ready(),
         "auth_enabled": bool(settings.AGENT_API_TOKEN),
     }

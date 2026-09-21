@@ -18,6 +18,7 @@ import re
 from typing import Any
 
 from config import settings
+from agent.constants import SIMPLE_INTENTS  # S2 单一真值：与 llm 路由共用
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,6 @@ _DOWNGRADE_PATTERNS: list[tuple[str, re.Pattern]] = [
     ("role_override", re.compile(r"(you are now|扮演(系统|管理员|root))", re.I)),
 ]
 
-SIMPLE_INTENTS = frozenset({"greeting", "thanks", "knowledge"})
 NO_TOOL_INTENTS = SIMPLE_INTENTS | frozenset({"boundary", "security_block"})
 
 ANALYSIS_TOOL_NAMES = frozenset({

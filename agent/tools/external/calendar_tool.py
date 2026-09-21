@@ -19,21 +19,25 @@ from langchain_core.tools import tool
 
 logger = logging.getLogger(__name__)
 
-# 节假日数据（内置，不依赖外部文件）
-_HOLIDAYS = {
-    "元旦": {"date": "01-01", "type": "法定假日", "impact": "中"},
-    "春节": {"date": "01-28", "type": "法定假日", "impact": "高"},
-    "情人节": {"date": "02-14", "type": "节日", "impact": "中"},
-    "妇女节": {"date": "03-08", "type": "节日", "impact": "低"},
-    "清明节": {"date": "04-04", "type": "法定假日", "impact": "中"},
-    "劳动节": {"date": "05-01", "type": "法定假日", "impact": "高"},
-    "端午节": {"date": "05-31", "type": "传统节日", "impact": "中"},
-    "儿童节": {"date": "06-01", "type": "节日", "impact": "低"},
-    "中秋节": {"date": "09-17", "type": "传统节日", "impact": "高"},
-    "国庆节": {"date": "10-01", "type": "法定假日", "impact": "高"},
-    "双十一": {"date": "11-11", "type": "电商节日", "impact": "中"},
-    "冬至": {"date": "12-22", "type": "传统节日", "impact": "低"},
-}
+# B2-S3 单一真值：节假日数据只存 knowledge/data/holidays.json（RAG 与工具共用），
+# 原内置 _HOLIDAYS 硬编码已删除（其 2026 端午/中秋日期与真实历法不符）。
+_DATA_FILE = Path(__file__).resolve().parents[2] / "knowledge" / "data" / "holidays.json"
+
+
+def _load_holidays() -> dict:
+    try:
+        entries = json.loads(_DATA_FILE.read_text(encoding="utf-8"))
+        return {
+            e["name"]: {"date": e["date"], "type": e["type"], "impact": e["impact"]}
+            for e in entries
+            if e.get("name") and e.get("date")
+        }
+    except Exception as e:
+        logger.error(f"[Holiday] 读取 holidays.json 失败: {e}")
+        return {}
+
+
+_HOLIDAYS = _load_holidays()
 
 
 @tool
