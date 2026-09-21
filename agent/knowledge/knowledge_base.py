@@ -254,10 +254,6 @@ class KnowledgeBase:
                         texts.append(item)
         return "\n".join(texts)
 
-    def search_keywords(self, query: str, top_k: int = 3) -> list[str]:
-        """兼容旧接口：只返回文本。"""
-        return [h["text"] for h in self.search_keyword_hits(query, top_k=top_k)]
-
     def search_keyword_hits(self, query: str, top_k: int = 3) -> list[dict]:
         """JSON keywords 匹配，带来源。"""
         self._ensure_ready()
@@ -361,10 +357,6 @@ class KnowledgeBase:
         )
         self.last_hits = hits
         return hits[:top_k]
-
-    def search(self, query: str, top_k: int = 3, use_vector: bool = True) -> list[str]:
-        """兼容旧接口：只返回文本列表。"""
-        return [h["text"] for h in self.search_hits(query, top_k=top_k, use_vector=use_vector)]
 
     def format_context(self, results: list) -> str:
         """把检索结果格式化为可注入 Prompt 的文本（带来源/层级）。"""

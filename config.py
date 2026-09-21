@@ -27,7 +27,6 @@ class Settings(BaseSettings):
     # 简单意图（greeting/thanks/知识）用的小模型；空则与 LLM_MODEL 相同
     LLM_MODEL_SIMPLE: str = ""
     LLM_TEMPERATURE: float = 0.7
-    LLM_MODEL_ALIAS: str = "智谱 GLM-4.7-Flash"
     # 路由不准（置信度低于阈值）时回退大模型
     LLM_ROUTE_FALLBACK_TO_LARGE: bool = True
     LLM_ROUTE_CONFIDENCE_MIN: float = 0.5
@@ -71,14 +70,14 @@ class Settings(BaseSettings):
     # 会话与记忆
     # ================================================================
     MAX_HISTORY: int = 20
-    ENABLE_LLM_CACHE: bool = False
 
     # ================================================================
-    # 分析阈值
+    # 分析阈值（R9：算法阈值以配置为准，工具不再硬编码）
     # ================================================================
-    ANOMALY_THRESHOLD: float = 0.2
+    # 异常检测 Z-score 阈值（|Z| 超过即视为异常突变点）
+    ANOMALY_THRESHOLD: float = 2.0
+    # 相关性 |r| 中等相关/弱相关分界（>0.7 恒为强相关）
     CORRELATION_SIGNIFICANT: float = 0.5
-    FORECAST_CONFIDENCE: float = 0.8
     # S4 单一真值：数据库无成本字段时的估算成本率（cost_profit/menu/promotion 共用）
     COST_RATIO_DEFAULT: float = 0.35
 

@@ -7,7 +7,8 @@ from agent.llm import (
     is_llm_connect_error,
     _make_chat,
 )
-from agent.nodes import perceive, route_after_dispatcher
+from agent.workers.perceive import perceive
+from agent.workers.dispatcher import route_after_dispatcher
 from config import settings
 
 

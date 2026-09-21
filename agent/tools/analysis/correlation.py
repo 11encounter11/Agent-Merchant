@@ -21,8 +21,12 @@ from datetime import date, timedelta
 
 from langchain_core.tools import tool
 from db.database import execute_query
+from config import settings
 
 logger = logging.getLogger(__name__)
+
+# 强相关分界（统计学惯例）；中等相关分界走配置 CORRELATION_SIGNIFICANT
+_STRONG_R = 0.7
 
 
 def _pearson_r(x: list[float], y: list[float]) -> float:
@@ -48,9 +52,9 @@ def _interpret_r(r: float) -> str:
     """解释相关系数。"""
     abs_r = abs(r)
     direction = "正相关" if r > 0 else "负相关" if r < 0 else "无相关"
-    if abs_r > 0.7:
+    if abs_r > _STRONG_R:
         strength = "强"
-    elif abs_r > 0.3:
+    elif abs_r > settings.CORRELATION_SIGNIFICANT:
         strength = "中等"
     else:
         strength = "弱"
@@ -121,9 +125,9 @@ async def correlation_analysis(
     ]
 
     abs_r = abs(r)
-    if abs_r > 0.7:
+    if abs_r > _STRONG_R:
         lines.append(f"  {variable_a} 和 {variable_b} 高度相关，一个变化时另一个很可能同步变化。")
-    elif abs_r > 0.3:
+    elif abs_r > settings.CORRELATION_SIGNIFICANT:
         lines.append(f"  {variable_a} 和 {variable_b} 有一定相关性，但还受其他因素影响。")
     else:
         lines.append(f"  {variable_a} 和 {variable_b} 相关性很弱，基本独立变化。")

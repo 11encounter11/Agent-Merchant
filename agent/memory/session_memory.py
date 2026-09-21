@@ -8,7 +8,7 @@
 - 只存 human + ai 文本，不存 Tool 调用链
 
 不做什么：
-- 不做长期偏好记忆（那是 long_term_memory 的事）
+- 不做长期偏好记忆
 - 不做 RAG 检索（那是 knowledge_base 的事）
 """
 

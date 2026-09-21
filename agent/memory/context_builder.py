@@ -63,13 +63,7 @@ class ContextBuilder:
 
         if self.kb:
             use_vector = self._needs_vector_search(user_input)
-            if hasattr(self.kb, "search_hits"):
-                rag_hits = self.kb.search_hits(
-                    user_input, use_vector=use_vector
-                )
-            else:
-                texts = self.kb.search(user_input, top_k=3, use_vector=use_vector)
-                rag_hits = [{"text": t, "source": "", "layer": "unknown"} for t in texts]
+            rag_hits = self.kb.search_hits(user_input, use_vector=use_vector)
             if rag_hits:
                 knowledge_text = self.kb.format_context(rag_hits)
                 messages.insert(0, HumanMessage(content=f"[参考信息]\n{knowledge_text}"))

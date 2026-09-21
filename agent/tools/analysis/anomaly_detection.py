@@ -21,6 +21,7 @@ from datetime import date, timedelta
 
 from langchain_core.tools import tool
 from db.database import execute_query
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ def _z_scores(values: list[float]) -> list[float]:
 async def anomaly_detection(
     metric: str = "turnover",
     days: int = 30,
-    threshold: float = 2.0,
+    threshold: float = -1.0,
 ) -> str:
     """
     异常检测：找出经营指标中的异常突变点。
@@ -55,7 +56,7 @@ async def anomaly_detection(
                 turnover（营业额）、order_count（订单数）、
                 cancel_rate（退单率）、avg_price（客单价）
         days: 分析最近多少天（默认 30 天）
-        threshold: Z-score 阈值（默认 2.0，越大越不敏感）
+        threshold: Z-score 阈值；不传（-1）则用系统配置 ANOMALY_THRESHOLD（默认 2.0，越大越不敏感）
 
     返回：
         异常点列表 + 每日指标值 + 统计摘要
@@ -65,6 +66,8 @@ async def anomaly_detection(
         - "营业额有没有突然下降的日子？"
         - "退单率有没有异常？"
     """
+    if threshold <= 0:
+        threshold = settings.ANOMALY_THRESHOLD
     today = date.today()
     start = today - timedelta(days=days - 1)
 

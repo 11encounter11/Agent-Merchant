@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 
 from config import settings
-from db.database import execute_query, execute_write
+from db.database import execute_write
 
 logger = logging.getLogger(__name__)
 
@@ -75,19 +75,3 @@ async def append_chat_log(
         )
     except Exception as e:
         logger.warning(f"[ChatLog] 写入失败（已忽略）: {e}")
-
-
-async def list_session_logs(session_id: str, limit: int = 50) -> list[dict]:
-    """按会话查日志（走 idx_session_created）。"""
-    sql = """
-        SELECT id, session_id, thread_id, role, content, token_total, created_at
-        FROM agent_chat_log
-        WHERE session_id = %s
-        ORDER BY created_at ASC, id ASC
-        LIMIT %s
-    """
-    try:
-        return await execute_query(sql, (session_id, limit))
-    except Exception as e:
-        logger.warning(f"[ChatLog] 查询失败: {e}")
-        return []

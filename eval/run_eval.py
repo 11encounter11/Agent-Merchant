@@ -22,7 +22,7 @@ if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
 from agent.llm import inspect_turn
-from agent.nodes import route_after_dispatcher
+from agent.workers.dispatcher import route_after_dispatcher
 from agent.security import is_tool_allowed
 
 DATASET = Path(__file__).resolve().parent / "cases.json"

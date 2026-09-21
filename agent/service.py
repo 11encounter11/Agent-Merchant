@@ -137,7 +137,7 @@ async def chat(
         "reply": ai_reply,
         "session_id": session_id,
         "thread_id": thread_id,
-        "rag_hits": compact_hits(result.get("rag_hits") or rag_hits),
+        "rag_hits": compact_hits(rag_hits),
     }
     if token_usage:
         reply["token_usage"] = token_usage

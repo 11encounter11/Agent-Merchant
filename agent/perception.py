@@ -117,10 +117,10 @@ def classify_intent(user_input: str) -> dict:
 
 def inject_context() -> dict:
     """
-    注入情境信息：当前日期、星期、时间。
+    注入情境信息：当前日期、星期。
 
     返回：
-        {"current_date": "2026-07-25", "weekday": "星期六", "hour": 14, "time_str": "14:30"}
+        {"current_date": "2026-07-25", "weekday": "星期六"}
     """
     now = datetime.now()
     weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
@@ -128,6 +128,4 @@ def inject_context() -> dict:
     return {
         "current_date": now.strftime("%Y-%m-%d"),
         "weekday": weekdays[now.weekday()],
-        "hour": now.hour,
-        "time_str": now.strftime("%H:%M"),
     }

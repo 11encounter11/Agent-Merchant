@@ -20,9 +20,6 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
-WORKERS = ("analyst", "strategist", "reviewer", "call_llm")
-
-
 def build_plan(intent_type: str) -> list[str]:
     """
     Plan-and-Execute：先定计划再逐步执行。

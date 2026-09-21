@@ -5,7 +5,10 @@ import asyncio
 from langchain_core.messages import AIMessage
 
 from agent.llm import inspect_turn
-from agent.nodes import execute_tools, perceive, route_after_dispatcher, reflect
+from agent.workers.execute_tools import execute_tools
+from agent.workers.perceive import perceive
+from agent.workers.dispatcher import route_after_dispatcher
+from agent.workers.reflect import reflect
 from agent.security import (
     scan_user_input,
     is_tool_allowed,
