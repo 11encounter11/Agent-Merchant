@@ -1,0 +1,16 @@
+.git
+.gitignore
+.venv
+venv
+__pycache__
+*.pyc
+.env
+.env.*
+!.env.example
+data
+logs
+tests
+eval
+frontend-ui/node_modules
+frontend-ui/dist
+frontend-ui/.env.local
