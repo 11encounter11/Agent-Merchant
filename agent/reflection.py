@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 _IDENTITY_KW = [
     "通义千问", "qwen", "deepseek", "gpt", "openai",
     "阿里云", "dashscope", "语言模型",
+    # 已停用但仍可能从历史 checkpoint / 旧会话里被带出来的供应商名
+    "glm", "智谱",
 ]
 
 # 身份替代话术

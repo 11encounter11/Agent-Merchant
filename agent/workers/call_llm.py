@@ -31,6 +31,17 @@ def call_llm(state: AgentState, config: RunnableConfig | None = None) -> dict:
     )
 
     extras = []
+    widget_context = state.get("widget_context") or ""
+    widget_facts = state.get("widget_facts") or ""
+    if widget_context:
+        extras.append(
+            "## 图表上下文（服务端快照，优先使用）\n"
+            f"{widget_context}\n"
+            "数字事实已由系统置顶展示，正文不要重复具体金额/百分比，重点解释原因、影响与建议；"
+            "如必须引用，原样引用置顶事实，不要换算或省略小数点。"
+            "未出现护栏提示时，不要声称‘限流/截断/额度用尽’。"
+            "如果用户要求快照之外的时间范围，明确说明需要切换看板区间或刷新后再查。"
+        )
     if analysis:
         analysis_text = "\n\n".join(
             f"【{name}】\n{content}" for name, content in analysis.items()
@@ -94,4 +105,9 @@ def call_llm(state: AgentState, config: RunnableConfig | None = None) -> dict:
         }
     token_usage = merge_token_usage(token_usage, response)
 
+    content = response.content or ""
+    if widget_facts:
+        # 金额/百分比由服务端置顶，避免模型转写小数（实测会把 659.00 写成 65900）
+        content = f"数据事实（服务端快照）：{widget_facts}\n\n{content}"
+        response = AIMessage(content=content, id=getattr(response, "id", None))
     return {"messages": [response], "token_usage": token_usage}

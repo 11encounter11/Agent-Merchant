@@ -24,8 +24,8 @@ class Settings(BaseSettings):
     # LLM 配置（支持多模型切换）
     # ================================================================
     LLM_API_KEY: str = ""
-    LLM_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4/"
-    LLM_MODEL: str = "GLM-4.7-Flash"
+    LLM_BASE_URL: str = "https://api.deepseek.com"
+    LLM_MODEL: str = "deepseek-flash"
     # 简单意图（greeting/thanks/知识）用的小模型；空则与 LLM_MODEL 相同
     LLM_MODEL_SIMPLE: str = ""
     LLM_TEMPERATURE: float = 0.7
@@ -40,19 +40,22 @@ class Settings(BaseSettings):
     LLM_CONNECT_TIMEOUT_SEC: float = 20.0
 
     # ================================================================
-    # Embedding 配置（用于 RAG 知识库向量化）
+    # Embedding 配置（用于 RAG 知识库向量化；与 LLM 分属不同供应商）
     # ================================================================
     EMBEDDING_API_KEY: str = ""
-    EMBEDDING_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    EMBEDDING_MODEL: str = "text-embedding-v3"
+    EMBEDDING_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4"
+    # 智谱付费嵌入模型：默认 2048 维（可选 256/512/1024/2048），单请求上限 3072 token / 64 条
+    EMBEDDING_MODEL: str = "embedding-3"
     # 短 JSON 不切；超过该字数才切片
     RAG_CHUNK_SIZE: int = 500
     RAG_CHUNK_OVERLAP: int = 50
     RAG_TOP_K: int = 3
     # 关键词命中不足时的向量补齐（数据类意图不补，避免知识命中污染分析上下文）
     RAG_VECTOR_BACKFILL: bool = True
-    # 向量命中相似度下限（1/(1+距离)）；低于此值视为不相关，不注入 Prompt
-    RAG_VECTOR_MIN_SCORE: float = 0.45
+    # 向量命中相似度下限（1/(1+距离)）；低于此值视为不相关，不注入 Prompt。
+    # 0.52 为实测校准值（智谱 embedding-3 + 27 条语料）：向量腿正例 top1 ≥0.544，
+    # 最强负例 0.4952 → 取窗口中点。降到 0.45 会让负例污染，升到 0.55 开始丢召回。
+    RAG_VECTOR_MIN_SCORE: float = 0.52
     # 持久化向量库目录（chromadb PersistentClient）：避免每次重启重新 embedding
     RAG_VECTOR_INDEX_PATH: str = "data/chroma"
     # 启动预热：把「加载知识 + 建索引」从首个用户请求挪到服务启动

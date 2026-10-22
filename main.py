@@ -9,14 +9,21 @@
 import asyncio
 import logging
 import os
+import re
+import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from config import settings
 from agent.logging_config import setup_logging
 from api.routes import router
+from api.workbench_routes import router as workbench_router
 from db.database import close_pool
 from db.redis_client import close_redis
 from db.chat_log import ensure_chat_log_table
@@ -122,9 +129,82 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID"],
 )
 
+_REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def _error_code(status: int) -> str:
+    return {
+        400: "INVALID_ARGUMENT",
+        401: "UNAUTHORIZED",
+        403: "FORBIDDEN",
+        404: "NOT_FOUND",
+        409: "CONFLICT",
+        422: "VALIDATION_ERROR",
+        429: "RATE_LIMITED",
+        503: "SERVICE_UNAVAILABLE",
+    }.get(status, "HTTP_ERROR")
+
+
+def _request_id(request: Request) -> str:
+    return getattr(request.state, "request_id", "") or "req_unknown"
+
+
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    incoming = (request.headers.get("X-Request-ID") or "").strip()
+    request.state.request_id = (
+        incoming if _REQUEST_ID_PATTERN.match(incoming) else f"req_{uuid.uuid4().hex[:16]}"
+    )
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request.state.request_id
+    return response
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    headers = dict(exc.headers or {})
+    code = headers.pop("X-Error-Code", "") or _error_code(exc.status_code)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.detail,
+            "error_code": code,
+            "request_id": _request_id(request),
+        },
+        headers=headers,
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={
+            "detail": jsonable_encoder(exc.errors()),
+            "error_code": "VALIDATION_ERROR",
+            "request_id": _request_id(request),
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("[API] 未处理异常 request_id=%s", _request_id(request))
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "服务处理失败，请稍后重试",
+            "error_code": "INTERNAL_ERROR",
+            "request_id": _request_id(request),
+        },
+    )
+
+
 app.include_router(router)
+app.include_router(workbench_router)
 
 if __name__ == "__main__":
     import uvicorn

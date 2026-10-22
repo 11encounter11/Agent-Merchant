@@ -19,6 +19,8 @@ Pydantic 会自动帮你校验数据：
 from pydantic import BaseModel, Field
 from typing import Literal, Optional
 
+from schemas.workbench import WidgetContext
+
 # ============================================================
 # 全局输入约束（单一真值）
 # ============================================================
@@ -49,6 +51,8 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = _SessionId
     # 可选：显式指定 checkpoint 线程（默认=session_id）
     thread_id: Optional[str] = _SessionId
+    # 图表点击后带入的上下文：只允许选中键，不允许数值/SQL
+    widget_context: Optional[WidgetContext] = None
 
 
 class ChatResponse(BaseModel):
@@ -60,6 +64,9 @@ class ChatResponse(BaseModel):
     success: bool = True
     # RAG 命中来源（前端可忽略）
     rag_hits: Optional[list] = None
+    # “以后每天推送…” 命中偏好时返回已保存项
+    preference_saved: Optional[dict] = None
+    context_verified: Optional[bool] = None
 
 
 class ResumeRequest(BaseModel):

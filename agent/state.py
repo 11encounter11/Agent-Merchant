@@ -41,3 +41,7 @@ class AgentState(TypedDict):
     security: dict
     # RAG 命中
     rag_hits: list
+    # 图表点击上下文（服务端快照摘要；verified 时不再让 analyst 查“今天”）
+    widget_context: str
+    widget_context_verified: bool
+    widget_facts: str

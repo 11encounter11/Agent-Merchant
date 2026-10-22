@@ -1,0 +1,221 @@
+{
+  "demo": true,
+  "notice": "以下为演示条款，不是苍穹/美团/饿了么的真实平台政策，只用于验证规则检索与引用链路。",
+  "rules": [
+    {
+      "rule_key": "refund-timeout",
+      "title": "商家退款处理时限（演示）",
+      "section": "3.1",
+      "effective_date": "2026-01-01",
+      "status": "active",
+      "source": "DEMO_SYNTHETIC",
+      "category": "退款与取消",
+      "demo": true,
+      "keywords": [
+        "退款",
+        "退单",
+        "退款时限",
+        "处理退款",
+        "售后"
+      ],
+      "content": "商家收到退款申请后应在 24 小时内处理；超时未处理的，平台可介入审核。演示条款，不是真实平台政策。"
+    },
+    {
+      "rule_key": "refund-amount",
+      "title": "退款金额与整单退款（演示）",
+      "section": "3.2",
+      "effective_date": "2026-01-01",
+      "status": "active",
+      "source": "DEMO_SYNTHETIC",
+      "category": "退款与取消",
+      "demo": true,
+      "keywords": [
+        "退款金额",
+        "整单退款",
+        "部分退款",
+        "退款比例"
+      ],
+      "content": "退款金额以订单实付金额和已履约情况为参考；是否支持部分退款需与顾客协商并在平台记录。演示条款，不是真实平台政策。"
+    },
+    {
+      "rule_key": "order-cancel",
+      "title": "商家取消订单与拒单（演示）",
+      "section": "4.1",
+      "effective_date": "2026-01-01",
+      "status": "active",
+      "source": "DEMO_SYNTHETIC",
+      "category": "退款与取消",
+      "demo": true,
+      "keywords": [
+        "取消订单",
+        "拒单",
+        "接单",
+        "商家取消",
+        "取消"
+      ],
+      "content": "商家接单后应尽量履约；因缺货、设备故障等原因取消时，应填写原因并及时联系顾客。频繁无理由取消可能影响店铺服务分。演示条款，不是真实平台政策。"
+    },
+    {
+      "rule_key": "food-safety",
+      "title": "食品安全与投诉响应（演示）",
+      "section": "5.1",
+      "effective_date": "2026-01-01",
+      "status": "active",
+      "source": "DEMO_SYNTHETIC",
+      "category": "食品安全",
+      "demo": true,
+      "keywords": [
+        "食品安全",
+        "投诉",
+        "异物",
+        "变质",
+        "食安"
+      ],
+      "content": "涉及食品安全投诉时，商家应立即核查并保留相关批次、留样和沟通记录，在 24 小时内给出处理方案。演示条款，不是真实平台政策。"
+    },
+    {
+      "rule_key": "invoice",
+      "title": "发票开具（演示）",
+      "section": "6.1",
+      "effective_date": "2026-01-01",
+      "status": "active",
+      "source": "DEMO_SYNTHETIC",
+      "category": "财务结算",
+      "demo": true,
+      "keywords": [
+        "发票",
+        "开票",
+        "抬头",
+        "报销"
+      ],
+      "content": "顾客提出开票需求后，商家应在 48 小时内确认抬头、税号并完成开票或说明无法开具的原因。演示条款，不是真实平台政策。"
+    },
+    {
+      "rule_key": "promotion-price",
+      "title": "活动报名与活动价（演示）",
+      "section": "7.1",
+      "effective_date": "2026-01-01",
+      "status": "active",
+      "source": "DEMO_SYNTHETIC",
+      "category": "营销活动",
+      "demo": true,
+      "keywords": [
+        "活动",
+        "活动规则",
+        "满减",
+        "折扣",
+        "活动价",
+        "报名"
+      ],
+      "content": "活动价应在报名时确认并覆盖活动周期；活动期间不得无故下架活动商品或临时提高门槛。演示条款，不是真实平台政策。"
+    },
+    {
+      "rule_key": "delivery-timeout",
+      "title": "配送超时与责任（演示）",
+      "section": "8.1",
+      "effective_date": "2026-01-01",
+      "status": "active",
+      "source": "DEMO_SYNTHETIC",
+      "category": "履约与商品",
+      "demo": true,
+      "keywords": [
+        "配送",
+        "超时",
+        "送达",
+        "骑手",
+        "配送规则"
+      ],
+      "content": "商家应按承诺时间出餐；因商家出餐慢导致的超时由商家承担改善责任，因配送环节导致的超时由平台按配送规则处理。演示条款，不是真实平台政策。"
+    },
+    {
+      "rule_key": "product-description",
+      "title": "商品描述与规格一致（演示）",
+      "section": "9.1",
+      "effective_date": "2026-01-01",
+      "status": "active",
+      "source": "DEMO_SYNTHETIC",
+      "category": "履约与商品",
+      "demo": true,
+      "keywords": [
+        "商品描述",
+        "规格",
+        "图片",
+        "缺货",
+        "描述不符"
+      ],
+      "content": "商品名称、图片、规格和配料应与实际出品一致；临时缺货应下架或替换并及时告知顾客。演示条款，不是真实平台政策。"
+    },
+    {
+      "rule_key": "settlement-cycle",
+      "title": "结算周期（演示）",
+      "section": "10.1",
+      "effective_date": "2026-01-01",
+      "status": "active",
+      "source": "DEMO_SYNTHETIC",
+      "category": "财务结算",
+      "demo": true,
+      "keywords": [
+        "结算",
+        "账期",
+        "提现",
+        "到账",
+        "结算规则"
+      ],
+      "content": "结算周期以商家后台展示为准；存在退款、投诉或风控冻结的订单可能延迟结算。演示条款，不是真实平台政策。"
+    },
+    {
+      "rule_key": "review-appeal",
+      "title": "评价与申诉（演示）",
+      "section": "11.1",
+      "effective_date": "2026-01-01",
+      "status": "active",
+      "source": "DEMO_SYNTHETIC",
+      "category": "评价与申诉",
+      "demo": true,
+      "keywords": [
+        "评价",
+        "差评",
+        "申诉",
+        "评分",
+        "评价规则"
+      ],
+      "content": "商家对评价有异议时，可在评价生成后的规定时限内提交申诉材料；平台按证据审核，不承诺删除。演示条款，不是真实平台政策。"
+    },
+    {
+      "rule_key": "account-security",
+      "title": "账号与数据安全（演示）",
+      "section": "12.1",
+      "effective_date": "2026-01-01",
+      "status": "active",
+      "source": "DEMO_SYNTHETIC",
+      "category": "账号安全",
+      "demo": true,
+      "keywords": [
+        "账号",
+        "登录",
+        "密码",
+        "数据安全",
+        "权限"
+      ],
+      "content": "商家应妥善保管账号和员工权限，不得共享登录凭证；发现异常登录应及时修改密码并联系平台。演示条款，不是真实平台政策。"
+    },
+    {
+      "rule_key": "violation-penalty",
+      "title": "违规处理（演示）",
+      "section": "13.1",
+      "effective_date": "2026-01-01",
+      "status": "active",
+      "source": "DEMO_SYNTHETIC",
+      "category": "违规治理",
+      "demo": true,
+      "keywords": [
+        "违规",
+        "处罚",
+        "扣分",
+        "下架",
+        "合规"
+      ],
+      "content": "违规处理按情节采取提醒、扣分、商品下架或限制活动等措施；商家可在规定时限内申诉。演示条款，不是真实平台政策。"
+    }
+  ]
+}

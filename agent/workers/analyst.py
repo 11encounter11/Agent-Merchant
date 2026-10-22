@@ -44,6 +44,12 @@ def analyst(state: AgentState, config: RunnableConfig | None = None) -> dict:
         logger.warning("[Analyst] 工具步数已满，跳过选型")
         return {"guard_reason": "max_tool_steps"}
 
+    # 图表点击：服务端快照已带权威区间与数值，analyst 再查“今天”只会
+    # 产生错误日期（实库最新 2026-07-28）。直接交给 call_llm 基于快照回答。
+    if state.get("widget_context_verified"):
+        logger.info("[Analyst] 图表上下文已验证，跳过工具查询")
+        return {}
+
     security = state.get("security") or {}
     intent_type = (intent or {}).get("intent") or "unknown"
     gated_tools = filter_tools(ALL_TOOLS, intent_type, security)
@@ -61,6 +67,9 @@ def analyst(state: AgentState, config: RunnableConfig | None = None) -> dict:
         f"星期{context.get('weekday', '')}。"
         f"本轮剩余可调工具步数：{remaining_tool_quota(tool_steps)}。"
     ]
+    if state.get("widget_context"):
+        # 未验证/过期快照：仍允许查数，但明确要求使用上下文区间
+        extra_sys.append(state["widget_context"])
     inj_note = injection_system_note(security)
     if inj_note:
         extra_sys.append(inj_note)

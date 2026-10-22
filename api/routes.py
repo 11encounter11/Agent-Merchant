@@ -11,6 +11,7 @@ import hmac
 import json
 import logging
 import uuid
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request
 from fastapi.responses import StreamingResponse
@@ -108,10 +109,10 @@ def _friendly_llm_error(exc: Exception) -> str:
     """
     text = str(exc)
     if "FreeTierOnly" in text or "free quota has been exhausted" in text.lower():
-        return (
-            "通义千问免费额度已用完。请到阿里云 DashScope 控制台充值，"
-            "或关闭「仅使用免费额度」后再试。"
-        )
+        # 文案不能写死供应商：LLM 与 Embedding 分属两家，换 Key/换供应商时
+        # 指向错误的控制台会让人原地打转
+        host = urlparse(settings.LLM_BASE_URL).netloc or "LLM 服务商"
+        return f"LLM 免费额度已用完（供应商：{host}）。请充值或关闭「仅使用免费额度」后再试。"
     if "401" in text or "invalid_api_key" in text.lower():
         return "LLM API Key 无效，请检查 .env 中的 LLM_API_KEY。"
     if "429" in text or "rate" in text.lower():
@@ -175,18 +176,23 @@ async def chat(request: ChatRequest, http_request: Request, _auth: None = Depend
 
     session_id = request.session_id or str(uuid.uuid4())
     try:
-        result = await agent_chat(
-            message=request.message,
-            session_id=session_id,
-            thread_id=request.thread_id or session_id,
-            client_ip=_client_ip(http_request),
-        )
+        call_kwargs = {
+            "message": request.message,
+            "session_id": session_id,
+            "thread_id": request.thread_id or session_id,
+            "client_ip": _client_ip(http_request),
+        }
+        if request.widget_context:
+            call_kwargs["widget_context"] = request.widget_context.model_dump()
+        result = await agent_chat(**call_kwargs)
         return ChatResponse(
             reply=result["reply"],
             session_id=result["session_id"],
             thread_id=result.get("thread_id") or session_id,
             success=not result.get("rate_limited"),
             rag_hits=result.get("rag_hits") or None,
+            preference_saved=result.get("preference_saved"),
+            context_verified=result.get("context_verified"),
         )
     except Exception as e:
         logger.exception("[API] chat 失败: %s", e)
@@ -248,12 +254,15 @@ async def chat_stream(
 
         async def produce():
             try:
-                stream = await agent_chat_stream(
-                    request.message,
-                    session_id,
-                    thread_id=thread_id,
-                    client_ip=client_ip,
-                )
+                stream_kwargs = {
+                    "message": request.message,
+                    "session_id": session_id,
+                    "thread_id": thread_id,
+                    "client_ip": client_ip,
+                }
+                if request.widget_context:
+                    stream_kwargs["widget_context"] = request.widget_context.model_dump()
+                stream = await agent_chat_stream(**stream_kwargs)
                 async for chunk in stream:
                     await queue.put(chunk)
             except Exception as e:

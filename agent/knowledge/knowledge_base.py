@@ -54,8 +54,8 @@ def compact_hits(hits: list[dict]) -> list[dict]:
     """API / SSE 用的精简命中（不含全文）。"""
     out = []
     for h in hits or []:
-        text = h.get("text") or ""
-        out.append({
+        text = h.get("text") or h.get("preview") or h.get("snippet") or ""
+        item = {
             "source": h.get("source") or "",
             "layer": h.get("layer") or "",
             "score": h.get("score"),
@@ -63,7 +63,12 @@ def compact_hits(hits: list[dict]) -> list[dict]:
             "chunk_id": h.get("chunk_id") or "",
             "version": h.get("version") or "",
             "preview": text[:80],
-        })
+        }
+        for key in ("rule_id", "title", "section", "section_title",
+                    "effective_date", "status", "demo"):
+            if h.get(key) is not None:
+                item[key] = h[key]
+        out.append(item)
     return out
 
 
@@ -124,19 +129,40 @@ class KnowledgeBase:
         if self._loaded:
             self._ready = True
 
+    def _resolve_embedding_key(self) -> str:
+        """Embedding Key 的解析：同供应商才可复用 LLM Key。
+
+        LLM 与 Embedding 现在分属两家（DeepSeek / 智谱），把某一家的 Key
+        发给另一家只会拿到 401，并静默退化成「仅关键词」——排障时看不出原因。
+        因此只有 base_url 主机名相同才允许复用。
+        """
+        if settings.EMBEDDING_API_KEY:
+            return settings.EMBEDDING_API_KEY
+        if not settings.LLM_API_KEY:
+            return ""
+        from urllib.parse import urlparse
+
+        if urlparse(settings.EMBEDDING_BASE_URL).netloc == urlparse(settings.LLM_BASE_URL).netloc:
+            return settings.LLM_API_KEY
+        self.logger.warning(
+            "[KnowledgeBase] Embedding 与 LLM 不同供应商但未单独配 EMBEDDING_API_KEY，"
+            "跳过向量检索（不复用他家 Key，避免 401 后静默降级）"
+        )
+        return ""
+
     def _init_vector(self) -> None:
-        embedding_key = settings.EMBEDDING_API_KEY or settings.LLM_API_KEY
+        embedding_key = self._resolve_embedding_key()
         if not embedding_key:
             # 没有可用 Key 就彻底不做向量：不要退化成 chroma 默认 embedding
             # （那会在首个请求里下载 ONNX 模型）
-            self.logger.warning("[KnowledgeBase] 未配置 EMBEDDING_API_KEY/LLM_API_KEY，仅关键词模式")
+            self.logger.warning("[KnowledgeBase] 未配置 EMBEDDING_API_KEY，仅关键词模式")
             self._initialized = False
             return
         try:
             import chromadb
             from chromadb.utils import embedding_functions
 
-            dashscope_ef = embedding_functions.OpenAIEmbeddingFunction(
+            embed_ef = embedding_functions.OpenAIEmbeddingFunction(
                 api_key=embedding_key,
                 api_base=settings.EMBEDDING_BASE_URL,
                 model_name=settings.EMBEDDING_MODEL,
@@ -154,7 +180,7 @@ class KnowledgeBase:
             self.collection = self.client.get_or_create_collection(
                 name="agent_knowledge",
                 metadata={"description": "苍穹外卖 Agent 知识库"},
-                embedding_function=dashscope_ef,
+                embedding_function=embed_ef,
             )
             self._initialized = True
             self.logger.info(

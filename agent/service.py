@@ -28,6 +28,8 @@ from agent.memory.context_builder import ContextBuilder
 from agent.memory.rate_limit import check_rate_limit
 from agent.knowledge.knowledge_base import knowledge_base, compact_hits
 from agent.messages import is_placeholder_content
+from agent.workbench.planner import validate_widget_context
+from agent.workbench.preferences import apply_preference_intent, detect_preference_intent
 from db.chat_log import append_chat_log
 
 logger = logging.getLogger(__name__)
@@ -56,7 +58,9 @@ def _run_config(thread_id: str, session_id: str, turn: dict | None = None) -> di
     )
 
 
-def _initial_state(cleaned: str, session_id: str, context_messages: list) -> dict:
+def _initial_state(cleaned: str, session_id: str, context_messages: list,
+                   widget_context: str = "", widget_context_verified: bool = False,
+                   widget_facts: str = "") -> dict:
     return {
         "messages": context_messages,
         "user_input": cleaned,
@@ -74,6 +78,9 @@ def _initial_state(cleaned: str, session_id: str, context_messages: list) -> dic
         "llm_tier": "large",
         "security": {},
         "rag_hits": [],
+        "widget_context": widget_context,
+        "widget_context_verified": widget_context_verified,
+        "widget_facts": widget_facts,
     }
 
 
@@ -131,6 +138,7 @@ async def chat(
     session_id: str = None,
     thread_id: str = None,
     client_ip: str = "",
+    widget_context: dict | None = None,
 ) -> dict:
     """非流式对话。"""
     if session_id is None:
@@ -154,6 +162,21 @@ async def chat(
         f"[Chat] session={session_id} thread_id={thread_id} message='{cleaned}'"
     )
 
+    # “以后每天给我看退款趋势”这类偏好命令走确定性路径，不靠模型记得调工具
+    pref_intent = detect_preference_intent(cleaned)
+    if pref_intent:
+        reply, saved = await apply_preference_intent(pref_intent)
+        await _persist_turn(session_id, thread_id, cleaned, reply)
+        logger.info(f"[Chat] preference intent action={pref_intent.action} saved={bool(saved)}")
+        return {
+            "reply": reply,
+            "session_id": session_id,
+            "thread_id": thread_id,
+            "preference_saved": saved,
+            "context_verified": None,
+        }
+
+    ctx = await validate_widget_context(widget_context)
     # 感知只算一次：意图同时用于 Langfuse 标签、RAG 向量腿策略与日志
     turn = inspect_turn(cleaned)
     intent_type = (turn.get("intent") or {}).get("intent") or "unknown"
@@ -165,10 +188,16 @@ async def chat(
     if resumed is not None:
         logger.info(f"[Chat] 已续跑未完成线程 thread_id={thread_id}")
 
+    ctx_kwargs = {"widget_context": ctx["text"]} if ctx.get("text") else {}
     context_messages, rag_hits = await _context_builder.abuild_context(
-        session_id, cleaned, intent_type
+        session_id, cleaned, intent_type, **ctx_kwargs
     )
-    initial = _initial_state(cleaned, session_id, context_messages)
+    initial = _initial_state(
+        cleaned, session_id, context_messages,
+        widget_context=ctx.get("text", ""),
+        widget_context_verified=bool(ctx.get("verified")),
+        widget_facts=ctx.get("facts", ""),
+    )
     initial["rag_hits"] = rag_hits
 
     ai_reply = ""
@@ -197,6 +226,7 @@ async def chat(
         "session_id": session_id,
         "thread_id": thread_id,
         "rag_hits": compact_hits(rag_hits),
+        "context_verified": ctx.get("verified") if widget_context else None,
     }
     if token_usage:
         reply["token_usage"] = token_usage
@@ -234,6 +264,7 @@ async def chat_stream(
     session_id: str = None,
     thread_id: str = None,
     client_ip: str = "",
+    widget_context: dict | None = None,
 ):
     """流式对话。R3：限流在返回生成器前检查，首字节前完成校验。"""
     if session_id is None:
@@ -251,6 +282,7 @@ async def chat_stream(
     )
 
     # 与 chat() 一致：感知只算一次（限流之后、进图之前）
+    pref_intent = detect_preference_intent(cleaned)
     turn = inspect_turn(cleaned)
     intent_type = (turn.get("intent") or {}).get("intent") or "unknown"
 
@@ -258,6 +290,16 @@ async def chat_stream(
         if not allowed:
             yield {"type": "content", "content": rate_reason or "请求过于频繁，请稍后再试。"}
             yield {"type": "rate_limited", "session_id": session_id}
+            return
+
+        if pref_intent:
+            reply, saved = await apply_preference_intent(pref_intent)
+            yield {"type": "content", "content": reply}
+            if saved:
+                yield {"type": "preference_saved", "preference": saved}
+            if pref_intent.action != "help":
+                yield {"type": "dashboard_updated"}
+            await _persist_turn(session_id, thread_id, cleaned, reply)
             return
 
         graph = get_agent_graph()
@@ -277,10 +319,32 @@ async def chat_stream(
                     "hint": "已从断点续跑完成上一未完成任务",
                 }
 
+            ctx = await validate_widget_context(widget_context)
+            if widget_context:
+                yield {
+                    "type": "context",
+                    "verified": bool(ctx.get("verified")),
+                    "widget_id": ctx.get("widget_id"),
+                    "selection": ctx.get("selection") or {},
+                    "facts": ctx.get("facts") or "",
+                }
+            facts_text = ""
+            if ctx.get("facts"):
+                # 流式路径下模型输出是逐 token 直出的，call_llm 的后处理不会进入流；
+                # 所以事实必须在这里先发，保证金额/百分比不会被模型改写。
+                facts_text = f"数据事实（服务端快照）：{ctx['facts']}\n\n"
+                accumulated += facts_text
+                yield {"type": "content", "content": facts_text}
+            stream_ctx_kwargs = {"widget_context": ctx["text"]} if ctx.get("text") else {}
             context_messages, rag_hits = await _context_builder.abuild_context(
-                session_id, cleaned, intent_type
+                session_id, cleaned, intent_type, **stream_ctx_kwargs
             )
-            initial_state = _initial_state(cleaned, session_id, context_messages)
+            initial_state = _initial_state(
+                cleaned, session_id, context_messages,
+                widget_context=ctx.get("text", ""),
+                widget_context_verified=bool(ctx.get("verified")),
+                widget_facts=ctx.get("facts", ""),
+            )
             initial_state["rag_hits"] = rag_hits
             if rag_hits:
                 yield {"type": "rag", "hits": compact_hits(rag_hits)}

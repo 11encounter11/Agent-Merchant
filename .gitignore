@@ -1,6 +1,9 @@
 # Git ignore rules
 # Sensitive files
 .env
+# 备份/本地变体同样含真实密钥，一律不入库（.env.example 是模板，例外）
+.env.*
+!.env.example
 
 # Python
 __pycache__/
@@ -27,3 +30,11 @@ flow_graph_v3.png
 docs/flow_graph.png
 data/migrate_backup/
 data/chroma/
+
+# AI workbench runtime (preferences/snapshots)
+data/workbench/
+
+# frontend-ui
+frontend-ui/node_modules/
+frontend-ui/dist/
+frontend-ui/.env.local
