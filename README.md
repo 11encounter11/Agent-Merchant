@@ -5,7 +5,6 @@
 > 本项目基于开源《苍穹外卖》(`sky-take-out`) 课程工程，在其之上**独立新增一层 Python Agent 决策服务**；Java `backend/` 平台只读，不改动其任何一行代码。
 >
 > 版本号以 `config.py` 的 `APP_VERSION` 为唯一来源（`GET /health` 可见）。
-> 架构与设计文档在 `docs/`（图编排 / RAG / 安全 / 模块拆分 / REDESIGN 需求基线），本 README 只做导览。
 
 ## 它能做什么
 
@@ -90,7 +89,6 @@ deploy/       Dockerfile / docker-compose / nginx 模板 / 部署 Runbook
 eval/         行为评测与检索评测
 scripts/      数据校验、流程图导出、迁移 DDL
 tests/        单元测试
-docs/         架构与设计文档
 ```
 
 ## 部署（Docker Compose）
