@@ -7,6 +7,7 @@ from langchain_core.runnables import RunnableConfig
 
 from agent.state import AgentState
 from agent.prompts import SYSTEM_PROMPT
+from agent.data_sufficiency import classify, insufficiency_note
 from agent.security import injection_system_note
 from agent.messages import sanitize_tool_pairing
 from agent.guards import is_token_budget_exceeded, merge_token_usage, guard_user_message
@@ -47,6 +48,9 @@ def call_llm(state: AgentState, config: RunnableConfig | None = None) -> dict:
             f"【{name}】\n{content}" for name, content in analysis.items()
         )
         extras.append(f"## 本轮数据分析结果\n{analysis_text}")
+        note = insufficiency_note(classify(analysis))
+        if note:
+            extras.append(note)
     if strategy.get("recommendations"):
         extras.append(f"## 策略建议（已校验）\n{strategy['recommendations']}")
     if guard_reason:

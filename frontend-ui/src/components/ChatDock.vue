@@ -160,20 +160,25 @@ function isRuleCitation(citation: ChatCitation): boolean {
       <div v-if="canRetry" class="retry-row">
         <button type="button" class="retry-button" @click="retryLast">重试上一轮</button>
       </div>
-      <div class="composer-box">
-        <textarea
-          v-model="state.composerText"
-          rows="2"
-          placeholder="例如：为什么 7 月 26 日卖得好？哪些菜拖累客单价？"
-          aria-label="输入经营问题"
-          @keydown.enter.exact.prevent="send"
-        />
-        <button v-if="!state.streaming" type="button" class="send-button" :disabled="!canSend" @click="send">
-          发送
-        </button>
-        <button v-else type="button" class="send-button stop" @click="stopStreaming">停止</button>
+      <div v-if="!state.chatEnabled" class="readonly-note">
+        只读演示：对话功能已关闭，不会产生模型调用。看板、规则中心与历史记录仍可正常查看。
       </div>
-      <p class="composer-note">回答会引用当前看板区间；数值与规则以服务端查询为准。</p>
+      <template v-else>
+        <div class="composer-box">
+          <textarea
+            v-model="state.composerText"
+            rows="2"
+            placeholder="例如：为什么 7 月 26 日卖得好？哪些菜拖累客单价？"
+            aria-label="输入经营问题"
+            @keydown.enter.exact.prevent="send"
+          />
+          <button v-if="!state.streaming" type="button" class="send-button" :disabled="!canSend" @click="send">
+            发送
+          </button>
+          <button v-else type="button" class="send-button stop" @click="stopStreaming">停止</button>
+        </div>
+        <p class="composer-note">回答会引用当前看板区间；数值与规则以服务端查询为准。</p>
+      </template>
     </footer>
   </aside>
 </template>
@@ -257,6 +262,16 @@ function isRuleCitation(citation: ChatCitation): boolean {
 .send-button:disabled { opacity: .45; }
 .send-button.stop { background: var(--red); }
 .composer-note { margin: 6px 2px 0; color: var(--faint); font-size: 10px; }
+.readonly-note {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--line, rgba(17, 27, 43, .25));
+  border-radius: 10px;
+  background: rgba(17, 27, 43, .03);
+  color: var(--muted, #5b6472);
+  font-size: 12px;
+  line-height: 1.7;
+}
 @media (max-width: 1100px) {
   .chat-dock { inset: 0; width: auto; max-width: none; border-radius: 0; }
   .chat-fab { right: 16px; bottom: 16px; }

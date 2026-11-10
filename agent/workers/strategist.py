@@ -7,6 +7,12 @@ from langchain_core.runnables import RunnableConfig
 
 from agent.state import AgentState
 from agent.prompts import STRATEGIST_PROMPT
+from agent.data_sufficiency import (
+    LEVEL_EMPTY,
+    LEVEL_UNAVAILABLE,
+    classify,
+    insufficiency_note,
+)
 from agent.guards import is_token_budget_exceeded, merge_token_usage
 from agent.workers.common import try_invoke_routed
 
@@ -27,18 +33,29 @@ def strategist(state: AgentState, config: RunnableConfig | None = None) -> dict:
         logger.warning("[Strategist] token 预算已满，跳过")
         return {"guard_reason": "token_budget"}
 
+    verdict = classify(analysis)
+    if verdict["level"] in (LEVEL_UNAVAILABLE, LEVEL_EMPTY):
+        # 没有任何可用数据还出建议，就是让模型凭空编经营动作
+        logger.info(f"[Strategist] 数据不足以支撑建议（level={verdict['level']}），跳过策略生成")
+        return {}
+
     logger.info("[Strategist] 生成策略建议")
 
     analysis_text = "\n\n".join(
         f"【{name}】\n{content}" for name, content in analysis.items()
     )
+    note = insufficiency_note(verdict)
     messages = [
         SystemMessage(content=STRATEGIST_PROMPT),
         SystemMessage(content=f"当前情境：{context}"),
+    ]
+    if note:
+        messages.append(SystemMessage(content=note))
+    messages.append(
         HumanMessage(
             content=f"以下是数据分析结果，请基于此生成经营策略建议：\n{analysis_text}"
-        ),
-    ]
+        )
+    )
 
     response = try_invoke_routed(messages, tier="large", config=config)
     if response is None:

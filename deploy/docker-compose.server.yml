@@ -12,6 +12,12 @@ services:
       redis:
         condition: service_healthy
 
+  web:
+    # 演示机出网不稳（npm ci 会挂），前端改用本地构建好的 dist 挂载；
+    # 更新方式：本地 npm run build → 上传 dist → `up -d --no-build web`
+    volumes:
+      - ../frontend-ui/dist:/usr/share/nginx/html:ro
+
   mysql:
     image: mysql:8.0
     command:

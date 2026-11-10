@@ -4,6 +4,7 @@ Redis 客户端
 做什么：
 - 懒连接 asyncio Redis
 - 不可用时自动降级（返回 None），业务走文件/内存兜底
+- 降级是**带冷却的**：冷却到期后重新试连，Redis 恢复则缓存/限流自动跟着恢复
 
 不做什么：
 - 不替代 MySQL 经营数据
@@ -13,26 +14,46 @@ Redis 客户端
 from __future__ import annotations
 
 import logging
+import time
 from typing import Optional
 
 from config import settings
 
 logger = logging.getLogger(__name__)
 
+# 降级后的重连间隔（秒）。粘滞降级会让演示机 Redis 抖一次就永久走本地兜底，
+# 直到进程重启才恢复；但每次调用都重试又会在库挂掉时放大延迟。
+# 想改配置可在 config 加 REDIS_RETRY_COOLDOWN_SEC，未加时用这个默认值。
+_RETRY_COOLDOWN_SEC = float(getattr(settings, "REDIS_RETRY_COOLDOWN_SEC", 30) or 30)
+
 _redis = None
 _redis_failed = False
+_retry_after = 0.0
+
+
+def _in_cooldown() -> bool:
+    """是否还在冷却期内（不再尝试连接）。"""
+    if not _redis_failed:
+        return False
+    # _retry_after 为 0 表示状态由外部手工置位（单测强制降级），按持续降级处理
+    return not _retry_after or time.monotonic() < _retry_after
 
 
 async def get_redis():
-    """获取 Redis 连接；失败则返回 None（降级）。"""
-    global _redis, _redis_failed
+    """获取 Redis 连接；失败或冷却中则返回 None（降级）。"""
+    global _redis, _redis_failed, _retry_after
 
     if not settings.REDIS_ENABLED:
         return None
-    if _redis_failed:
+    if _in_cooldown():
         return None
+
     if _redis is not None:
         return _redis
+
+    # 冷却结束（或首次调用）：清状态，真的再试一次
+    _redis_failed = False
+    _retry_after = 0.0
 
     try:
         from redis.asyncio import Redis
@@ -51,12 +72,15 @@ async def get_redis():
         return _redis
     except Exception as e:
         _redis_failed = True
-        logger.warning(f"[Redis] 不可用，降级为本地：{e}")
+        _retry_after = time.monotonic() + _RETRY_COOLDOWN_SEC
+        logger.warning(
+            f"[Redis] 不可用，降级为本地（{_RETRY_COOLDOWN_SEC:.0f}s 后重试）：{e}"
+        )
         return None
 
 
 async def close_redis():
-    global _redis, _redis_failed
+    global _redis, _redis_failed, _retry_after
     if _redis is not None:
         try:
             await _redis.aclose()
@@ -64,13 +88,15 @@ async def close_redis():
             pass
     _redis = None
     _redis_failed = False
+    _retry_after = 0.0
 
 
 def reset_redis_for_tests():
     """单测重置连接状态。"""
-    global _redis, _redis_failed
+    global _redis, _redis_failed, _retry_after
     _redis = None
     _redis_failed = False
+    _retry_after = 0.0
 
 
 async def redis_status() -> dict:

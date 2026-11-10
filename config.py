@@ -144,6 +144,9 @@ class Settings(BaseSettings):
     SECURITY_INJECTION_ENABLED: bool = True
     # 非空时 /api/* 必须带 Authorization: Bearer <token>；空=开发模式（启动告警）
     AGENT_API_TOKEN: str = ""
+    # 对话总开关：false = 只读演示（看板/规则照常，对话三端点直接返回说明，
+    # 不进模型链路）。与「Key 是否配置」分开，避免把开发/测试的缺 Key 当成关闭。
+    CHAT_ENABLED: bool = True
     # CORS 白名单（逗号分隔）；禁止使用 *
     CORS_ORIGINS: str = "http://localhost:8888,http://127.0.0.1:8888"
     # 仅当部署在可信反向代理后才置 true：允许采信 x-forwarded-for 取客户端 IP

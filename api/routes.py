@@ -56,6 +56,7 @@ async def _runtime_status() -> dict:
     return {
         "redis": await redis_status(),
         "rate_limit": {"enabled": settings.RATE_LIMIT_ENABLED, "per_minute": settings.RATE_LIMIT_PER_MINUTE},
+        "chat_enabled": settings.CHAT_ENABLED,
         "chat_log_enabled": settings.CHAT_LOG_ENABLED,
         "checkpoint_backend": settings.CHECKPOINT_BACKEND,
         "security_injection_enabled": settings.SECURITY_INJECTION_ENABLED,
@@ -87,6 +88,19 @@ def require_auth(authorization: str = Header(default="")) -> None:
 def _is_prod() -> bool:
     """APP_ENV=prod/production 视为生产环境（单一真值，供鉴权与启动日志共用）。"""
     return str(settings.APP_ENV).strip().lower() in {"prod", "production"}
+
+
+# 未配置 LLM Key 时的只读演示文案：宁可明确说「对话关了」，
+# 也不要让空 Key 去构造客户端抛 500，更不能误烧额度
+CHAT_DISABLED_REPLY = (
+    "当前是只读演示：对话功能已关闭，不会产生模型调用。"
+    "看板、规则中心与历史记录仍可正常查看。"
+)
+
+
+def _chat_disabled() -> bool:
+    """CHAT_ENABLED=false → 只读演示，对话三个端点直接返回说明，不进模型链路。"""
+    return not settings.CHAT_ENABLED
 
 
 def _client_ip(request: Request) -> str:
@@ -175,6 +189,14 @@ async def chat(request: ChatRequest, http_request: Request, _auth: None = Depend
     from agent.service import chat as agent_chat
 
     session_id = request.session_id or str(uuid.uuid4())
+    thread_id = request.thread_id or session_id
+    if _chat_disabled():
+        return ChatResponse(
+            reply=CHAT_DISABLED_REPLY,
+            session_id=session_id,
+            thread_id=thread_id,
+            success=True,
+        )
     try:
         call_kwargs = {
             "message": request.message,
@@ -228,6 +250,15 @@ async def chat_stream(
 
     async def event_generator():
         nonlocal resume_from
+
+        if _chat_disabled():
+            session_data = {"type": "session", "session_id": session_id, "thread_id": thread_id}
+            yield _sse("session", session_data, event_id=1)
+            yield _sse(
+                "content", {"type": "content", "content": CHAT_DISABLED_REPLY}, event_id=2
+            )
+            yield _sse("done", {"type": "done"}, event_id=3)
+            return
 
         # 回放缓冲中客户端漏掉的事件
         if resume_from > 0 and thread_id in _sse_buffers:
@@ -320,6 +351,13 @@ async def chat_stream(
 @router.post("/api/agent/chat/resume", response_model=ResumeResponse)
 async def chat_resume(request: ResumeRequest, _auth: None = Depends(require_auth)):
     """显式恢复断点线程（配合 CHECKPOINT_INTERRUPT_AFTER 演示 / 上次中断的会话）。"""
+    if _chat_disabled():
+        return ResumeResponse(
+            resumed=False,
+            message=CHAT_DISABLED_REPLY,
+            session_id=request.session_id or request.thread_id,
+            thread_id=request.thread_id,
+        )
     from agent.service import resume_thread
 
     try:

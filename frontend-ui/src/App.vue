@@ -13,6 +13,7 @@ import TrendChart from './components/TrendChart.vue'
 import {
   loadDashboard,
   loadRuleCenter,
+  loadRuntime,
   loadSidecars,
   rangeOptions,
   setRange,
@@ -21,6 +22,7 @@ import {
 } from './store/workbench'
 
 onMounted(() => {
+  void loadRuntime()
   void loadDashboard()
   void loadSidecars()
   void loadRuleCenter()

@@ -116,6 +116,10 @@ export function searchRules(params: {
   return request<RuleSearchResponse>(`/api/workbench/rules/search?${query.toString()}`)
 }
 
+export function fetchRuntime(): Promise<{ runtime?: { chat_enabled?: boolean } }> {
+  return request<{ runtime?: { chat_enabled?: boolean } }>('/api/admin/config')
+}
+
 export function fetchRuleDetail(ruleId: string, section = ''): Promise<RuleDetail> {
   const query = new URLSearchParams()
   if (section) query.set('section', section)

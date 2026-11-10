@@ -8,6 +8,7 @@ import {
   fetchRuleCategories,
   fetchRuleDetail,
   fetchRules,
+  fetchRuntime,
   isBackendOffline,
   searchRules,
 } from '../api/http'
@@ -95,6 +96,7 @@ interface WorkbenchState {
   toast: string
   rulesLoading: boolean
   ruleCenter: RuleCenterState
+  chatEnabled: boolean
 }
 
 export const state = reactive<WorkbenchState>({
@@ -114,6 +116,7 @@ export const state = reactive<WorkbenchState>({
   rules: null,
   toast: '',
   rulesLoading: false,
+  chatEnabled: true,
   ruleCenter: {
     categories: [],
     results: [],
@@ -186,6 +189,15 @@ export function setRange(range: RangeKey): void {
   state.range = range
   clearContext()
   void loadDashboard(true)
+}
+
+export async function loadRuntime(): Promise<void> {
+  try {
+    const res = await fetchRuntime()
+    state.chatEnabled = res.runtime?.chat_enabled !== false
+  } catch {
+    // 运行态读不到就按默认（可用）处理，不阻断看板
+  }
 }
 
 export async function loadSidecars(): Promise<void> {

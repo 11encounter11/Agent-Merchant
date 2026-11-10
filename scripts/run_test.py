@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -24,9 +25,40 @@ import httpx
 _ROOT = Path(__file__).resolve().parent.parent
 DATASET_FILE = _ROOT / "eval" / "test_cases.json"
 RESULT_DIR = _ROOT / "eval" / "results"
-AGENT_URL = "http://localhost:8100/api/agent/chat"
+BASE_URL = "http://localhost:8100"
+AGENT_URL = f"{BASE_URL}/api/agent/chat"
+HEALTH_URL = f"{BASE_URL}/health"
 TIMEOUT = 90
 SLEEP_BETWEEN = 0.8
+_TOKEN = ""  # 配了 AGENT_API_TOKEN 的实例不发 Bearer 头就全线 401
+
+
+def _headers() -> dict:
+    return {"Authorization": f"Bearer {_TOKEN}"} if _TOKEN else {}
+
+
+def configure(base_url: str = "", token: str | None = None) -> None:
+    """指向别的实例（本机或已部署）并设置 Bearer Token。"""
+    global AGENT_URL, HEALTH_URL, _TOKEN
+    if base_url:
+        root = base_url.rstrip("/")
+        AGENT_URL = f"{root}/api/agent/chat"
+        HEALTH_URL = f"{root}/health"
+    if token is not None:
+        _TOKEN = token.strip()
+
+
+def _default_token() -> str:
+    """优先取 .env 里的 AGENT_API_TOKEN，让本地起服务时开箱即用。"""
+    if os.getenv("AGENT_API_TOKEN"):
+        return os.environ["AGENT_API_TOKEN"].strip()
+    try:
+        sys.path.insert(0, str(_ROOT))
+        from config import settings
+
+        return (settings.AGENT_API_TOKEN or "").strip()
+    except Exception:
+        return ""
 
 
 def load_dataset() -> dict:
@@ -39,13 +71,19 @@ def ask_agent(question: str, session_id: str | None = None) -> dict:
     if session_id:
         payload["session_id"] = session_id
     try:
-        resp = httpx.post(AGENT_URL, json=payload, timeout=TIMEOUT)
+        resp = httpx.post(AGENT_URL, json=payload, timeout=TIMEOUT, headers=_headers())
         # 业务层失败也会返回 200 + success=false（额度不足等）
         try:
             data = resp.json()
         except Exception:
             data = {}
 
+        if resp.status_code == 401:
+            return {
+                "ok": False,
+                "reply": "[ERROR] HTTP 401：未带或带错 Bearer Token（--token / AGENT_API_TOKEN）",
+                "session_id": data.get("session_id") or session_id or "",
+            }
         if resp.status_code >= 400:
             detail = data.get("reply") or data.get("detail") or resp.text[:300]
             return {
@@ -256,12 +294,16 @@ def save_results(results: list[dict]) -> Path:
     return path
 
 
-def health_check() -> bool:
+def health_check() -> tuple[bool, str]:
     try:
-        r = httpx.get("http://localhost:8100/health", timeout=5)
-        return r.status_code == 200
-    except Exception:
-        return False
+        r = httpx.get(HEALTH_URL, timeout=5, headers=_headers())
+    except Exception as e:
+        return False, f"连不上 {HEALTH_URL}：{e.__class__.__name__}"
+    if r.status_code == 401:
+        return False, f"{HEALTH_URL} 返回 401：Bearer Token 没传或对不上（--token 或 .env 的 AGENT_API_TOKEN）"
+    if r.status_code != 200:
+        return False, f"{HEALTH_URL} 返回 HTTP {r.status_code}"
+    return True, ""
 
 
 def main() -> int:
@@ -274,11 +316,23 @@ def main() -> int:
     )
     parser.add_argument("--ids", help="按 ID 过滤，逗号分隔，如 A01,E02,M01")
     parser.add_argument("--category", help="按类别过滤，如 营业额 / 菜品 / 多轮")
+    parser.add_argument(
+        "--base-url",
+        default=os.getenv("AGENT_BASE_URL", ""),
+        help="被测实例地址，默认 http://localhost:8100；可指向已部署实例",
+    )
+    parser.add_argument(
+        "--token",
+        default=None,
+        help="Bearer Token；默认取环境变量/.env 的 AGENT_API_TOKEN（配了鉴权就必须带）",
+    )
     args = parser.parse_args()
 
-    if not health_check():
-        print("错误：无法连接 http://localhost:8100/health")
-        print("请先启动服务：python main.py")
+    configure(args.base_url, args.token if args.token is not None else _default_token())
+    ok, why = health_check()
+    if not ok:
+        print(f"错误：{why}")
+        print("请先启动服务（python main.py），或用 --base-url 指向别的实例")
         return 1
 
     data = load_dataset()

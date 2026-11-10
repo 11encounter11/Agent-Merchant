@@ -87,6 +87,16 @@ async def factor_decomposition(
     prev_turnover = float(prev["total_amount"])
     prev_avg = float(prev["avg_amount"]) if prev["order_count"] else 0
 
+    # COUNT(*) 恒返回一行，所以「查了但没单」不会走上面的数据不足分支；
+    # 两个窗口都空时任何环比都不构成结论，必须直说（SPEC/03 G10）
+    if not cur_orders and not prev_orders:
+        return (
+            f"=== 因子分解（{begin_date} ~ {end_date} vs {compare_begin_date} ~ {compare_end_date}）===\n"
+            f"本期与对比期的有效订单数均为 0（status 3/4/5），无有效订单记录可分解。\n"
+            "这可能是真实停业，也可能是经营数据未更新到该区间——"
+            "请先核对最近一条订单日期，不要把全零讲成营业额下滑。"
+        )
+
     # 2. 计算变化率
     turnover_change = cur_turnover - prev_turnover
     turnover_change_pct = (turnover_change / prev_turnover * 100) if prev_turnover else 0
@@ -140,6 +150,12 @@ async def factor_decomposition(
         lines.append(f"  主因：订单数变化（{orders_change_pct:+.1f}%）影响大于客单价（{avg_change_pct:+.1f}%）")
     else:
         lines.append(f"  主因：客单价变化（{avg_change_pct:+.1f}%）影响大于订单数（{orders_change_pct:+.1f}%）")
+
+    if not cur_orders:
+        lines.append(
+            f"  【窗口提示】本期 {begin_date} ~ {end_date} 无有效订单记录（计数为 0），"
+            "归零可能是真实停业也可能是数据未更新，请先确认最近一条订单日期再下结论。"
+        )
 
     if category_comparison:
         lines.append("")
